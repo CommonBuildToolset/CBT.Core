@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <PropertyGroup>
+    <!-- Ensures that if this file changes, projects will be rebuilt -->
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+
+    <!-- TODO: Cause an error if EnlistmentRoot isn't set? -->
+    <EnlistmentRoot>$(EnlistmentRoot.TrimEnd('\\'))</EnlistmentRoot>
+
+    <!-- Default CBT global to this directory if not specified -->
+    <CBTGlobalPath Condition=" '$(CBTGlobalPath)' == '' ">$(MSBuildThisFileDirectory)</CBTGlobalPath>
+    <CBTGlobalPath>$(CBTGlobalPath.TrimEnd('\\'))</CBTGlobalPath>
+
+    <!-- Default CBT local to ..\Local if not specified -->
+    <CBTLocalPath Condition=" '$(CBTLocalPath)' == '' And Exists('$([System.IO.Path]::GetDirectoryName($(CBTGlobalPath)))\Local')">$([System.IO.Path]::GetDirectoryName($(CBTGlobalPath)))\Local</CBTLocalPath>
+    <CBTLocalPath>$(CBTLocalPath.TrimEnd('\\'))</CBTLocalPath>
+
+    <CBTLocalBuildExtensionsPath Condition=" '$(CBTLocalBuildExtensionsPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\Extensions\$(MSBuildToolsVersion)') ">$(CBTLocalPath)\Extensions\$(MSBuildToolsVersion)</CBTLocalBuildExtensionsPath>
+    <CBTLocalBuildExtensionsPath Condition=" '$(CBTLocalBuildExtensionsPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\Extensions') ">$(CBTLocalPath)\Extensions</CBTLocalBuildExtensionsPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' And '$(DefaultProjectConfiguration)' != '' ">$(DefaultProjectConfiguration)</Configuration>
+    <Platform Condition=" '$(Platform)' == '' And '$(DefaultProjectPlatform)' != '' ">$(DefaultProjectPlatform)</Platform>
+  </PropertyGroup>
+
+  <Import Project="$(CBTLocalBuildExtensionsPath)\OutputPaths.props" Condition=" '$(CBTLocalOutputPathsPropsHasBeenImported)' != 'true' And '$(CBTLocalBuildExtensionsPath)' != ''  And Exists('$(CBTLocalBuildExtensionsPath)\OutputPaths.props') "/>
+
+  <PropertyGroup>
+    <BaseIntermediateOutputPath Condition=" '$(BaseIntermediateOutputPath)'=='' ">$(MSBuildProjectDirectory)\obj</BaseIntermediateOutputPath>
+    <CBTIntermediateOutputBasePath Condition=" '$(CBTIntermediateOutputBasePath)' == '' ">$(BaseIntermediateOutputPath)CBT</CBTIntermediateOutputBasePath>
+    <!-- Path to where NuGet packages should be restored.  The default value is $(SolutionDir) in Visual Studio or $(MSBuildProjectDirectory)..\packages otherwise.
+         It is highly recommended to have a NuGet.config in the root folder and to set this property to match the path.
+     -->
+    <NuGetPackagesPath Condition=" '$(NuGetPackagesPath)' == '' And '$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*'">$([System.IO.Path]::Combine($(SolutionDir), 'packages'))</NuGetPackagesPath>
+    <NuGetPackagesPath Condition=" '$(NuGetPackagesPath)' == '' ">$([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($(MSBuildProjectDirectory))), 'packages'))</NuGetPackagesPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(IntermediateOutputPath)' == '' And '$(Configuration)' != '' And '$(Platform)' != '' ">
+    <IntermediateOutputPath Condition=" '$(PlatformName)' == 'AnyCPU' ">$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition=" '$(PlatformName)' != 'AnyCPU' ">$(BaseIntermediateOutputPath)$(PlatformName)\$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(OutputPath)' == '' And '$(Configuration)' != '' And '$(Platform)' != '' ">
+    <!-- Default output path if $(Platform) and $(Configuration) are specified. -->
+    <OutputPath Condition=" '$(Platform)' == 'AnyCPU' ">$(MSBuildProjectDirectory)\bin\$(Configuration)\</OutputPath>
+    <OutputPath Condition=" '$(Platform)' != 'AnyCPU' ">$(MSBuildProjectDirectory)\bin\$(Configuration)\$(Platform)\</OutputPath>
+  </PropertyGroup>
+
+  <Import Project="$(CBTLocalBuildExtensionsPath)\build.props" Condition=" '$(CBTLocalBuildPropsHasBeenImported)' != 'true' And '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\build.props') " />
+</Project>

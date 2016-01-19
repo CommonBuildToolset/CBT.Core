@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <PropertyGroup>
+    <SavedCustomBeforeMicrosoftCSharpTargets Condition=" '$(CustomBeforeMicrosoftCSharpTargets)' != '' ">$(CustomBeforeMicrosoftCSharpTargets)</SavedCustomBeforeMicrosoftCSharpTargets>
+    <SavedCustomAfterMicrosoftCSharpTargets Condition=" '$(CustomAfterMicrosoftCSharpTargets)' != '' ">$(CustomAfterMicrosoftCSharpTargets)</SavedCustomAfterMicrosoftCSharpTargets>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CustomBeforeMicrosoftCSharpTargets Condition=" Exists('$(CBTLocalBuildExtensionsPath)\Before.Microsoft.CSharp.targets') ">$(CBTLocalBuildExtensionsPath)\Before.Microsoft.CSharp.targets</CustomBeforeMicrosoftCSharpTargets>
+    <CustomAfterMicrosoftCSharpTargets Condition=" Exists('$(CBTLocalBuildExtensionsPath)\After.Microsoft.CSharp.targets') ">$(CBTLocalBuildExtensionsPath)\After.Microsoft.CSharp.targets</CustomAfterMicrosoftCSharpTargets>
+  </PropertyGroup>
+  
+</Project>
