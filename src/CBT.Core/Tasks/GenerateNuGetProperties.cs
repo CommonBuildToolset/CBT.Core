@@ -3,11 +3,13 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using CBT.Core.Internal;
 using Microsoft.Build.Construction;
+using Microsoft.Build.Framework;
 
-namespace CBT.Core
+namespace CBT.Core.Tasks
 {
-    public sealed class NuGetPropertyGenerator
+    public sealed class GenerateNuGetProperties : TaskBase
     {
         /// <summary>
         /// The name of the 'ID' attribute in the NuGet packages.config.
@@ -24,45 +26,37 @@ namespace CBT.Core
         /// </summary>
         private const string NuGetPackagesConfigVersionAttributeName = "version";
 
-        public bool Generate(string outputPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, params string[] packageConfigPaths)
+        [Required]
+        public string OutputPath { get; set; }
+
+        [Required]
+        public string PropertyNamePrefix { get; set; }
+
+        public string PropertyValuePrefix { get; set; }
+
+        public bool IncludeAllVersions { get; set; }
+
+        public string[] PackageConfigPaths { get; set; }
+
+        public override bool Execute()
         {
-            if (String.IsNullOrWhiteSpace(outputPath))
-            {
-                throw new ArgumentNullException("outputPath");
-            }
-
-            if (String.IsNullOrWhiteSpace(propertyNamePrefix))
-            {
-                throw new ArgumentNullException("propertyNamePrefix");
-            }
-
-            if (String.IsNullOrWhiteSpace(propertyValuePrefix))
-            {
-                throw new ArgumentNullException("propertyValuePrefix");
-            }
-
-            if (packageConfigPaths == null)
-            {
-                throw new ArgumentNullException("packageConfigPaths");
-            }
-
             // Return if no package.config files were specified
             //
-            if (packageConfigPaths.Length == 0)
+            if (PackageConfigPaths.Length == 0)
             {
                 return false;
             }
 
             // Determine if the output path is already up-to-date and do a no-op
             //
-            if (File.Exists(outputPath) && File.GetLastWriteTimeUtc(outputPath) > packageConfigPaths.Where(i => !String.IsNullOrWhiteSpace(i) && File.Exists(i)).Select(i => new FileInfo(i)).Max(i => new DateTime(Math.Max(i.LastWriteTimeUtc.Ticks, i.CreationTimeUtc.Ticks), DateTimeKind.Utc)))
+            if (File.Exists(OutputPath) && CoreUtility.IsFileOutOfDate(OutputPath, PackageConfigPaths))
             {
                 return true;
             }
 
-            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, includeAllVersions, packageConfigPaths);
+            ProjectRootElement project = CreateProjectWithNuGetProperties(PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, PackageConfigPaths);
 
-            project.Save(outputPath);
+            project.Save(OutputPath);
 
             return true;
         }
@@ -139,5 +133,7 @@ namespace CBT.Core
 
             return project;
         }
+
+        
     }
 }

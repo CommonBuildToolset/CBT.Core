@@ -26,7 +26,7 @@
     <Compile Include="Internal\ITaskLogHelper.cs" />
     <Compile Include="Internal\TaskLogHelper.cs" />
     <Compile Include="ModulePropertyGenerator.cs" />
-    <Compile Include="NuGetPropertyGenerator.cs" />
+    <Compile Include="Tasks\GenerateNuGetProperties.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tasks\RestoreModules.cs" />
     <Compile Include="Tasks\TaskBase.cs" />

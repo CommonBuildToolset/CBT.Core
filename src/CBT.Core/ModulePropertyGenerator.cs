@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CBT.Core.Internal;
+using CBT.Core.Tasks;
 using Microsoft.Build.Construction;
 
 namespace CBT.Core
@@ -11,7 +12,7 @@ namespace CBT.Core
     {
         public bool Generate(string outputPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] packageConfigPaths, string[] beforeModuleImports, string[] afterModuleImports)
         {
-            ProjectRootElement project = NuGetPropertyGenerator.CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, includeAllVersions, packageConfigPaths);
+            ProjectRootElement project = GenerateNuGetProperties.CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, includeAllVersions, packageConfigPaths);
 
             if (beforeModuleImports != null)
             {
@@ -45,7 +46,7 @@ namespace CBT.Core
                 return true;
             }
 
-            ProjectRootElement project = NuGetPropertyGenerator.CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, false, packageConfigPaths);
+            ProjectRootElement project = GenerateNuGetProperties.CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, false, packageConfigPaths);
 
             foreach (string importFile in importPaths)
             {
