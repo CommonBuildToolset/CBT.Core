@@ -23,7 +23,7 @@
   <ItemGroup>
     <Compile Include="CoreUtility.cs" />
     <Compile Include="Internal\CBTBuildEngine.cs" />
-    <Compile Include="Internal\ITaskLogHeler.cs" />
+    <Compile Include="Internal\ITaskLogHelper.cs" />
     <Compile Include="Internal\TaskLogHelper.cs" />
     <Compile Include="ModulePropertyGenerator.cs" />
     <Compile Include="NuGetPropertyGenerator.cs" />

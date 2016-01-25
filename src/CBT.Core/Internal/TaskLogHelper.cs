@@ -4,7 +4,7 @@ using System;
 
 namespace CBT.Core.Internal
 {
-    internal sealed class TaskLogHelper : ITaskLogHeler
+    internal sealed class TaskLogHelper : ITaskLogHelper
     {
         private readonly TaskBase _task;
 

@@ -2,7 +2,7 @@
 
 namespace CBT.Core.Internal
 {
-    internal interface ITaskLogHeler
+    internal interface ITaskLogHelper
     {
         void Error(string message);
 
