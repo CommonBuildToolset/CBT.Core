@@ -58,7 +58,7 @@ namespace CBT.Core.Tasks
 
                     ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator();
 
-                    return modulePropertyGenerator.Generate(OutputFile, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, new[] { PackageConfig }, BeforeModuleImports, AfterModuleImports, ModuleInputs ?? new string[0]);
+                    return modulePropertyGenerator.Generate(OutputFile, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, new[] { PackageConfig }, BeforeModuleImports, AfterModuleImports);
                 }
                 catch (Exception e)
                 {
@@ -76,6 +76,8 @@ namespace CBT.Core.Tasks
 
         public bool Execute(string outputFile, string restoreCommand, string restoreArguments, string packageConfig, string packagesPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports, string[] moduleInputs)
         {
+            BuildEngine = new CBTBuildEngine();
+
             if(!CoreUtility.IsFileOutOfDate(outputFile, moduleInputs))
             {
                 return true;
@@ -94,7 +96,6 @@ namespace CBT.Core.Tasks
             AfterModuleImports = afterModuleImports;
             ModuleInputs = moduleInputs;
 
-            BuildEngine = new CBTBuildEngine();
 
             return Execute();
         }

@@ -57,7 +57,7 @@
 
     <CBTModuleRestoreCommand Condition=" '$(CBTModuleRestoreCommand)' == '' ">&quot;$(MSBuildThisFileDirectory)NuGet.exe&quot;</CBTModuleRestoreCommand>
     <CBTModuleRestoreArguments Condition=" '$(CBTModuleRestoreArguments)' == '' ">restore &quot;$(CBTModulesConfigPath)&quot; -OutputDirectory &quot;$(NuGetPackagesPath)&quot; -MSBuildVersion &quot;$(MSBuildToolsVersion)&quot; -Source &quot;C:\Users\Jeff\Repos\CBT.Modules&quot;</CBTModuleRestoreArguments>
-    <CBTModuleRestoreInputs Condition=" '$(CBTModuleRestoreInputs)' == '' ">$(MSBuildAllProjects);$(CBTCoreAssemblyPath);$(CBTModulesConfigPath)</CBTModuleRestoreInputs>
+    <CBTModuleRestoreInputs Condition=" '$(CBTModuleRestoreInputs)' == '' ">$(MSBuildThisFileFullPath);$(CBTCoreAssemblyPath);$(CBTModulesConfigPath)</CBTModuleRestoreInputs>
 
     <CBTModulesRestored Condition=" '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModulesRestoreTaskName)).Execute($(CBTModulePropsFile), $(CBTModuleRestoreCommand), $(CBTModuleRestoreArguments), $(CBTModulesConfigPath), $(NuGetPackagesPath), $(CBTModulesPropertyNamePrefix), $(CBTModulesPropertyValuePrefix), $(CBTModulePropertiesIncludeAllVersions), $(CBTModulesImportRelativePaths.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleImportsAfter.Split(';')), $(CBTModuleRestoreInputs.Split(';'))))</CBTModulesRestored>
     
@@ -69,7 +69,7 @@
   <UsingTask TaskName="RestoreModules" AssemblyFile="$(CBTCoreAssemblyPath)" />
   
   <Target Name="RestoreCBTModules" 
-      Condition=" '$(CBTModulesRestored)' != 'true' "
+      Condition=" '$(CBTModulesRestored)' == '' "
       Inputs="$(CBTModuleRestoreInputs)" 
       Outputs="$(CBTModulePropsFile)">
     

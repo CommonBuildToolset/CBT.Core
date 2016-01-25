@@ -20,11 +20,17 @@ namespace CBT.Core
                 return true;
             }
 
-            DateTime lastWriteTime = File.GetLastWriteTimeUtc(path);
+            var lastWriteTime = File.GetLastWriteTimeUtc(path).Ticks;
 
+            foreach(var item in paths.Where(File.Exists))
+            {
+                if (File.GetLastWriteTimeUtc(item).Ticks > lastWriteTime)
+                {
+                    return true;
+                }
+            }
 
-
-            return paths.FirstOrDefault(i => File.Exists(i) && File.GetLastWriteTimeUtc(i) < lastWriteTime) == null;
+            return false;
         }
     }
 }

@@ -8,13 +8,8 @@ namespace CBT.Core
 {
     public sealed class ModulePropertyGenerator
     {
-        public bool Generate(string outputPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] packageConfigPaths, string[] beforeModuleImports, string[] afterModuleImports, string[] moduleInputs)
+        public bool Generate(string outputPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] packageConfigPaths, string[] beforeModuleImports, string[] afterModuleImports)
         {
-            if (!CoreUtility.IsFileOutOfDate(outputPath, moduleInputs))
-            {
-                return true;
-            }
-
             ProjectRootElement project = NuGetPropertyGenerator.CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, includeAllVersions, packageConfigPaths);
 
             if (beforeModuleImports != null)
