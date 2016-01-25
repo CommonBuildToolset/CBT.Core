@@ -56,7 +56,7 @@
     <CBTModulesRestoreTaskName Condition=" '$(CBTModulesRestoreTaskName)' == '' ">CBT.Core.Tasks.RestoreModules</CBTModulesRestoreTaskName>
 
     <CBTModuleRestoreCommand Condition=" '$(CBTModuleRestoreCommand)' == '' ">&quot;$(MSBuildThisFileDirectory)NuGet.exe&quot;</CBTModuleRestoreCommand>
-    <CBTModuleRestoreArguments Condition=" '$(CBTModuleRestoreArguments)' == '' ">restore &quot;$(CBTModulesConfigPath)&quot; -OutputDirectory &quot;$(NuGetPackagesPath)&quot; -MSBuildVersion &quot;$(MSBuildToolsVersion)&quot; -Source &quot;C:\Users\Jeff\Repos\CBT.Modules&quot;</CBTModuleRestoreArguments>
+    <CBTModuleRestoreArguments Condition=" '$(CBTModuleRestoreArguments)' == '' ">restore &quot;$(CBTModulesConfigPath)&quot; -OutputDirectory &quot;$(NuGetPackagesPath)&quot; -MSBuildVersion &quot;$(MSBuildToolsVersion)&quot;</CBTModuleRestoreArguments>
     <CBTModuleRestoreInputs Condition=" '$(CBTModuleRestoreInputs)' == '' ">$(MSBuildThisFileFullPath);$(CBTCoreAssemblyPath);$(CBTModulesConfigPath)</CBTModuleRestoreInputs>
 
     <CBTModulesRestored Condition=" '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModulesRestoreTaskName)).Execute($(CBTModulePropsFile), $(CBTModuleRestoreCommand), $(CBTModuleRestoreArguments), $(CBTModulesConfigPath), $(NuGetPackagesPath), $(CBTModulesPropertyNamePrefix), $(CBTModulesPropertyValuePrefix), $(CBTModulePropertiesIncludeAllVersions), $(CBTModulesImportRelativePaths.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleImportsAfter.Split(';')), $(CBTModuleRestoreInputs.Split(';'))))</CBTModulesRestored>
@@ -91,10 +91,6 @@
     
   </Target>
 
-  <Target Name="VerifyCBTModulesRestored" BeforeTargets="BeforeBuild">
-    <Error Text="CBT modules failed to be restored.  See the MSBuild output for more information." Condition=" '$(CBTModulesRestored)' != 'true'" />
-  </Target>
-  
   <Import Project="$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)" Condition=" '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)') " />
   
   <!--<BaseIntermediateOutputPath Condition=" '$(BaseIntermediateOutputPath)'=='' ">$(MSBuildProjectDirectory)\obj</BaseIntermediateOutputPath>

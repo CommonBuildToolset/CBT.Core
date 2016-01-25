@@ -96,7 +96,6 @@ namespace CBT.Core.Tasks
             AfterModuleImports = afterModuleImports;
             ModuleInputs = moduleInputs;
 
-
             return Execute();
         }
 
@@ -132,6 +131,7 @@ namespace CBT.Core.Tasks
                     UseShellExecute = false,
                     RedirectStandardError = true,
                     RedirectStandardOutput = true,
+                    WorkingDirectory = Environment.CurrentDirectory,
                 },
             };
 
