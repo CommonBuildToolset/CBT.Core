@@ -1,13 +1,26 @@
-﻿using System;
+﻿using CBT.Core.Internal;
+using Microsoft.Build.Framework;
+using System;
 using System.Diagnostics;
 using System.Threading;
-using CBT.Core.Internal;
-using Microsoft.Build.Framework;
 
 namespace CBT.Core.Tasks
 {
     public sealed class RestoreModules : TaskBase
     {
+        [Required]
+        public string[] AfterModuleImports { get; set; }
+
+        [Required]
+        public string[] BeforeModuleImports { get; set; }
+
+        public string[] ImportRelativePaths { get; set; }
+
+        public bool IncludeAllVersions { get; set; }
+
+        [Required]
+        public string OutputFile { get; set; }
+
         [Required]
         public string PackageConfig { get; set; }
 
@@ -21,16 +34,10 @@ namespace CBT.Core.Tasks
         public string PropertyValuePrefix { get; set; }
 
         [Required]
+        public string RestoreArguments { get; set; }
+
+        [Required]
         public string RestoreCommand { get; set; }
-
-        [Required]
-        public string OutputFile { get; set; }
-
-        [Required]
-        public string[] BeforeModuleImports { get; set; }
-
-        [Required]
-        public string[] AfterModuleImports { get; set; }
 
         public override bool Execute()
         {
@@ -53,7 +60,7 @@ namespace CBT.Core.Tasks
 
                     ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator();
 
-                    return modulePropertyGenerator.Generate(OutputFile, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, new[] { PackageConfig }, BeforeModuleImports, AfterModuleImports);
+                    return modulePropertyGenerator.Generate(OutputFile, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, new[] {PackageConfig}, BeforeModuleImports, AfterModuleImports);
                 }
                 catch (Exception e)
                 {
@@ -86,13 +93,6 @@ namespace CBT.Core.Tasks
 
             return Execute();
         }
-
-        [Required]
-        public string RestoreArguments { get; set; }
-
-        public string[] ImportRelativePaths { get; set; }
-
-        public bool IncludeAllVersions { get; set; }
 
         private void RestorePackages()
         {
