@@ -30,6 +30,32 @@ namespace CBT.Core.Internal
         }
 
         /// <summary>
+        /// Logs a critical message using the specified string.
+        /// </summary>
+        /// <param name="message">The message string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="message"/> is <code>null</code>.</exception>
+        public void Critical(string message)
+        {
+            Critical(message, null);
+        }
+
+        /// <summary>
+        /// Logs a critical message using the specified string.
+        /// </summary>
+        /// <param name="message">The message string.</param>
+        /// <param name="args">Optional arguments for formatting the message string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="message"/> is <code>null</code>.</exception>
+        public void Critical(string message, params object[] args)
+        {
+            if (String.IsNullOrWhiteSpace(message))
+            {
+                throw new ArgumentNullException("message");
+            }
+
+            _task.BuildEngine.LogMessageEvent(new CriticalBuildMessageEventArgs(null, null, null, 0, 0, 0, 0, message, null, null, DateTime.UtcNow, args));
+        }
+
+        /// <summary>
         /// Logs an error using the specified string.
         /// </summary>
         /// <param name="message">The message string.</param>
