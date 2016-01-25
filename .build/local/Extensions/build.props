@@ -10,8 +10,6 @@
       
       <PropertyGroup>
         <AppDesignerFolder Condition=" '$(AppDesignerFolder)' == '' ">Properties</AppDesignerFolder>
-        <RootNamespace Condition=" '$(RootNamespace)' == '' ">$(MSBuildProjectName)</RootNamespace>
-        <AssemblyName Condition=" '$(AssemblyName)' == '' ">$(MSBuildProjectName)</AssemblyName>
         <FileAlignment Condition=" '$(FileAlignment)' == '' ">512</FileAlignment>
         <DefineConstants Condition=" !$(DefineConstants.Contains('TRACE')) ">$(DefineConstants);TRACE</DefineConstants>
         <ErrorReport Condition=" '$(ErrorReport)' == '' ">prompt</ErrorReport>

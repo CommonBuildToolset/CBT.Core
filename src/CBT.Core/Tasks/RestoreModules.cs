@@ -8,10 +8,8 @@ namespace CBT.Core.Tasks
 {
     public sealed class RestoreModules : TaskBase
     {
-        [Required]
         public string[] AfterModuleImports { get; set; }
 
-        [Required]
         public string[] BeforeModuleImports { get; set; }
 
         public string[] ImportRelativePaths { get; set; }
@@ -60,11 +58,12 @@ namespace CBT.Core.Tasks
 
                     ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator();
 
-                    return modulePropertyGenerator.Generate(OutputFile, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, new[] {PackageConfig}, BeforeModuleImports, AfterModuleImports);
+                    return modulePropertyGenerator.Generate(OutputFile, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, new[] { PackageConfig }, BeforeModuleImports, AfterModuleImports, ModuleInputs ?? new string[0]);
                 }
                 catch (Exception e)
                 {
                     Log.Error(e.Message);
+                    Log.Message(e.ToString());
 
                     return false;
                 }
@@ -75,8 +74,13 @@ namespace CBT.Core.Tasks
             }
         }
 
-        public bool Execute(string outputFile, string restoreCommand, string restoreArguments, string packageConfig, string packagesPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports)
+        public bool Execute(string outputFile, string restoreCommand, string restoreArguments, string packageConfig, string packagesPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports, string[] moduleInputs)
         {
+            if(!CoreUtility.IsFileOutOfDate(outputFile, moduleInputs))
+            {
+                return true;
+            }
+
             PackageConfig = packageConfig;
             PackagesPath = packagesPath;
             PropertyNamePrefix = propertyNamePrefix;
@@ -88,11 +92,14 @@ namespace CBT.Core.Tasks
             ImportRelativePaths = importRelativePaths;
             BeforeModuleImports = beforeModuleImports;
             AfterModuleImports = afterModuleImports;
+            ModuleInputs = moduleInputs;
 
             BuildEngine = new CBTBuildEngine();
 
             return Execute();
         }
+
+        public string[] ModuleInputs { get; set; }
 
         private void RestorePackages()
         {
@@ -148,9 +155,9 @@ namespace CBT.Core.Tasks
                         {
                             process.Kill();
                         }
-                        catch
+                        catch(Exception e)
                         {
-                            // Ignore
+                            Log.Message("Exception occurred while ending process: {0}", e.Message);
                         }
                     }
 

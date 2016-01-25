@@ -49,18 +49,20 @@
     <CBTModulePropertiesIncludeAllVersions Condition=" '$(CBTNuGetPackagePropertiesIncludeAllVersions)' != '' ">$([System.Convert]::ToBoolean($(CBTNuGetPackagePropertiesIncludeAllVersions)))</CBTModulePropertiesIncludeAllVersions>
     <CBTModulePropertiesIncludeAllVersions Condition=" '$(CBTNuGetPackagePropertiesIncludeAllVersions)' == '' ">false</CBTModulePropertiesIncludeAllVersions>
     <CBTModulesImportRelativePaths Condition=" '$(CBTModulesImportRelativePaths)' == '' ">CBT\Module\%24(MSBuildToolsVersion)\%24(MSBuildThisFile);CBT\Module\%24(MSBuildThisFile)</CBTModulesImportRelativePaths>
-    <CBTBeforeModuleImports Condition=" '$(CBTBeforeModuleImports)' == '' ">%24(CBTLocalBuildExtensionsPath)\$(MSBuildThisFile)</CBTBeforeModuleImports>
-    <CBTAfterModuleImports Condition=" '$(CBTAfterModuleImports)' == '' "></CBTAfterModuleImports>
+    <CBTModuleImportsBefore Condition=" '$(CBTModuleImportsBefore)' == '' ">%24(CBTLocalBuildExtensionsPath)\%24(MSBuildThisFile)</CBTModuleImportsBefore>
+    <CBTModuleImportsAfter Condition=" '$(CBTModuleImportsAfter)' == '' "></CBTModuleImportsAfter>
     <CBTCoreAssemblyPath Condition=" '$(CBTCoreAssemblyPath)' == '' ">$(MSBuildThisFileDirectory)CBT.Core.dll</CBTCoreAssemblyPath>
 
     <CBTModulesRestoreTaskName Condition=" '$(CBTModulesRestoreTaskName)' == '' ">CBT.Core.Tasks.RestoreModules</CBTModulesRestoreTaskName>
 
     <CBTModuleRestoreCommand Condition=" '$(CBTModuleRestoreCommand)' == '' ">&quot;$(MSBuildThisFileDirectory)NuGet.exe&quot;</CBTModuleRestoreCommand>
     <CBTModuleRestoreArguments Condition=" '$(CBTModuleRestoreArguments)' == '' ">restore &quot;$(CBTModulesConfigPath)&quot; -OutputDirectory &quot;$(NuGetPackagesPath)&quot; -MSBuildVersion &quot;$(MSBuildToolsVersion)&quot; -Source &quot;C:\Users\Jeff\Repos\CBT.Modules&quot;</CBTModuleRestoreArguments>
+    <CBTModuleRestoreInputs Condition=" '$(CBTModuleRestoreInputs)' == '' ">$(MSBuildAllProjects);$(CBTCoreAssemblyPath);$(CBTModulesConfigPath)</CBTModuleRestoreInputs>
 
-    <CBTModulesRestored Condition=" '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModulesRestoreTaskName)).Execute($(CBTModulePropsFile), $(CBTModuleRestoreCommand), $(CBTModuleRestoreArguments), $(CBTModulesConfigPath), $(NuGetPackagesPath), $(CBTModulesPropertyNamePrefix), $(CBTModulesPropertyValuePrefix), $(CBTModulePropertiesIncludeAllVersions), $(CBTModulesImportRelativePaths.Split(';')), $(CBTBeforeModuleImports.Split(';')), $(CBTAfterModuleImports.Split(';'))))</CBTModulesRestored>
+    <CBTModulesRestored Condition=" '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModulesRestoreTaskName)).Execute($(CBTModulePropsFile), $(CBTModuleRestoreCommand), $(CBTModuleRestoreArguments), $(CBTModulesConfigPath), $(NuGetPackagesPath), $(CBTModulesPropertyNamePrefix), $(CBTModulesPropertyValuePrefix), $(CBTModulePropertiesIncludeAllVersions), $(CBTModulesImportRelativePaths.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleImportsAfter.Split(';')), $(CBTModuleRestoreInputs.Split(';'))))</CBTModulesRestored>
     
   </PropertyGroup>
+  
 
   <Import Project="$(CBTModulePropsFile)" Condition=" '$(CBTModulesRestored)' == 'true' And Exists('$(CBTModulePropsFile)') "/>
 
@@ -68,12 +70,12 @@
   
   <Target Name="RestoreCBTModules" 
       Condition=" '$(CBTModulesRestored)' != 'true' "
-      Inputs="$(MSBuildThisFile);$(CBTCoreAssemblyPath);$(CBTModulesConfigPath)" 
+      Inputs="$(CBTModuleRestoreInputs)" 
       Outputs="$(CBTModulePropsFile)">
     
     <RestoreModules
-      AfterModuleImports="$(CBTAfterModuleImports.Split(';'))"
-      BeforeModuleImports="$(CBTBeforeModuleImports.Split(';'))"
+      AfterModuleImports="$(CBTModuleImportsAfter.Split(';'))"
+      BeforeModuleImports="$(CBTModuleImportsBefore.Split(';'))"
       ImportRelativePaths="$(CBTModulesImportRelativePaths.Split(';'))"
       OutputFile="$(CBTModulePropsFile)"
       PackageConfig="$(CBTModulesConfigPath)"
