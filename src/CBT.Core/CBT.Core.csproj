@@ -21,7 +21,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CoreUtility.cs" />
+    <Compile Include="Internal\CoreUtility.cs" />
     <Compile Include="Internal\CBTBuildEngine.cs" />
     <Compile Include="Internal\ITaskLogHelper.cs" />
     <Compile Include="Internal\TaskLogHelper.cs" />

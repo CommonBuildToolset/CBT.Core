@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CBT.Core.Internal;
 using Microsoft.Build.Construction;
 
 namespace CBT.Core
