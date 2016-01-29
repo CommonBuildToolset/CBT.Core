@@ -6,15 +6,29 @@ using System.Threading;
 
 namespace CBT.Core.Tasks
 {
-    public sealed class RestoreModules : TaskBase
+    public sealed class RestoreModules : ITask
     {
+        private static readonly string TaskName = typeof (RestoreModules).Name;
+
         public string[] AfterModuleImports { get; set; }
 
         public string[] BeforeModuleImports { get; set; }
 
+        /// <summary>
+        /// Gets or sets the build engine associated with the task.
+        /// </summary>
+        public IBuildEngine BuildEngine { get; set; }
+
+        /// <summary>
+        /// Gets or sets any host object that is associated with the task.
+        /// </summary>
+        public ITaskHost HostObject { get; set; }
+
         public string[] ImportRelativePaths { get; set; }
 
         public bool IncludeAllVersions { get; set; }
+
+        public string[] ModuleInputs { get; set; }
 
         [Required]
         public string OutputFile { get; set; }
@@ -37,7 +51,7 @@ namespace CBT.Core.Tasks
         [Required]
         public string RestoreCommand { get; set; }
 
-        public override bool Execute()
+        public bool Execute()
         {
             // Get a mutex name based on the output file
             //
@@ -54,16 +68,16 @@ namespace CBT.Core.Tasks
                 {
                     RestorePackages();
 
-                    Log.Message(MessageImportance.Low, "Create CBT module imports");
+                    LogMessage(MessageImportance.Low, "Create CBT module imports");
 
                     ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator();
 
-                    return modulePropertyGenerator.Generate(OutputFile, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, new[] { PackageConfig }, BeforeModuleImports, AfterModuleImports);
+                    return modulePropertyGenerator.Generate(OutputFile, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, new[] {PackageConfig}, BeforeModuleImports, AfterModuleImports);
                 }
                 catch (Exception e)
                 {
-                    Log.Error(e.Message);
-                    Log.Message(e.ToString());
+                    LogError(e.Message);
+                    LogMessage(e.ToString());
 
                     return false;
                 }
@@ -78,7 +92,7 @@ namespace CBT.Core.Tasks
         {
             BuildEngine = new CBTBuildEngine();
 
-            if(!CoreUtility.IsFileOutOfDate(outputFile, moduleInputs))
+            if (!CoreUtility.IsFileOutOfDate(outputFile, moduleInputs))
             {
                 return true;
             }
@@ -99,7 +113,113 @@ namespace CBT.Core.Tasks
             return Execute();
         }
 
-        public string[] ModuleInputs { get; set; }
+        /// <summary>
+        /// Logs a critical message using the specified string.
+        /// </summary>
+        /// <param name="message">The message string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="message"/> is <code>null</code>.</exception>
+        private void LogCritical(string message)
+        {
+            LogCritical(message, null);
+        }
+
+        /// <summary>
+        /// Logs a critical message using the specified string.
+        /// </summary>
+        /// <param name="message">The message string.</param>
+        /// <param name="args">Optional arguments for formatting the message string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="message"/> is <code>null</code>.</exception>
+        private void LogCritical(string message, params object[] args)
+        {
+            if (String.IsNullOrWhiteSpace(message))
+            {
+                throw new ArgumentNullException("message");
+            }
+
+            BuildEngine.LogMessageEvent(new CriticalBuildMessageEventArgs(null, null, null, 0, 0, 0, 0, message, null, null, DateTime.UtcNow, args));
+        }
+
+        /// <summary>
+        /// Logs an error using the specified string.
+        /// </summary>
+        /// <param name="message">The message string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="message"/> is <code>null</code>.</exception>
+        private void LogError(string message)
+        {
+            LogError(message, null);
+        }
+
+        /// <summary>
+        /// Logs an error using the specified string.
+        /// </summary>
+        /// <param name="message">The message string.</param>
+        /// <param name="args">Optional arguments for formatting the message string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="message"/> is <code>null</code>.</exception>
+        private void LogError(string message, params object[] args)
+        {
+            if (String.IsNullOrWhiteSpace(message))
+            {
+                throw new ArgumentNullException("message");
+            }
+
+            BuildEngine.LogErrorEvent(new BuildErrorEventArgs(null, null, null, 0, 0, 0, 0, message, null, TaskName, DateTime.UtcNow, args));
+        }
+
+        /// <summary>
+        /// Logs a message using the specified string.
+        /// </summary>
+        /// <param name="message">The message string.</param>
+        /// <param name="args">Optional arguments for formatting the message string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="message"/> is <code>null</code>.</exception>
+        private void LogMessage(string message, params object[] args)
+        {
+            LogMessage(MessageImportance.Normal, message, args);
+        }
+
+        /// <summary>
+        /// Logs a message using the specified string.
+        /// </summary>
+        /// <param name="importance">The importance level of the message.</param>
+        /// <param name="message">The message string.</param>
+        /// <param name="args">Optional arguments for formatting the message string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="message"/> is <code>null</code>.</exception>
+        private void LogMessage(MessageImportance importance, string message, params object[] args)
+        {
+            if (String.IsNullOrWhiteSpace(message))
+            {
+                throw new ArgumentNullException("message");
+            }
+
+            BuildEngine.LogMessageEvent(new BuildMessageEventArgs(message, null, TaskName, importance, DateTime.UtcNow, args));
+        }
+
+        /// <summary>
+        /// Logs a warning using the specified string.
+        /// Thread safe.
+        /// </summary>
+        /// <param name="message">The message string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="message"/> is <code>null</code>.</exception>
+        private void LogWarning(string message)
+        {
+            LogWarning(message, null);
+        }
+
+        /// <summary>
+        /// Logs a warning using the specified string.
+        /// Thread safe.
+        /// </summary>
+        /// <param name="message">The message string.</param>
+        /// <param name="args">Optional arguments for formatting the message string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="message"/> is <code>null</code>.</exception>
+        private void LogWarning(string message, params object[] args)
+        {
+            if (String.IsNullOrWhiteSpace(message))
+            {
+                throw new ArgumentNullException("message");
+            }
+
+            BuildEngine.LogWarningEvent(new BuildWarningEventArgs(null, null, null, 0, 0, 0, 0, message, null, TaskName, DateTime.UtcNow, args));
+        }
 
         private void RestorePackages()
         {
@@ -107,7 +227,7 @@ namespace CBT.Core.Tasks
             {
                 if (args != null && !String.IsNullOrWhiteSpace(args.Data))
                 {
-                    Log.Message(args.Data);
+                    LogMessage(args.Data);
                 }
             };
 
@@ -115,11 +235,11 @@ namespace CBT.Core.Tasks
             {
                 if (args != null && !String.IsNullOrWhiteSpace(args.Data))
                 {
-                    Log.Error(args.Data);
+                    LogError(args.Data);
                 }
             };
 
-            Log.Message(MessageImportance.High, "Restore CBT modules:");
+            LogMessage(MessageImportance.High, "Restore CBT modules:");
 
             Process process = new Process
             {
@@ -156,9 +276,9 @@ namespace CBT.Core.Tasks
                         {
                             process.Kill();
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
-                            Log.Message("Exception occurred while ending process: {0}", e.Message);
+                            LogMessage("Exception occurred while ending process: {0}", e.Message);
                         }
                     }
 
@@ -176,7 +296,7 @@ namespace CBT.Core.Tasks
                 process.ErrorDataReceived -= errorDataReceived;
             }
 
-            Log.Message("Successfully restored CBT module packages");
+            LogMessage("Successfully restored CBT module packages");
         }
     }
 }

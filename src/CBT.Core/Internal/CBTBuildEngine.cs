@@ -8,12 +8,6 @@ using System.Reflection;
 namespace CBT.Core.Internal
 {
     /// <summary>
-    /// A delegate for firing a build event.
-    /// </summary>
-    /// <param name="args"></param>
-    internal delegate void LogBuildEventHandler(BuildEventArgs args);
-
-    /// <summary>
     /// An internally used implementation of <see cref="IBuildEngine" /> that allows CBT to log events to MSBuild even though it isn't running as a task.
     /// </summary>
     internal sealed class CBTBuildEngine : IBuildEngine
@@ -58,6 +52,12 @@ namespace CBT.Core.Internal
                 }
             }
         }
+
+        /// <summary>
+        /// A delegate for firing a build event.
+        /// </summary>
+        /// <param name="args"></param>
+        private delegate void LogBuildEventHandler(BuildEventArgs args);
 
         /// <summary>
         /// Retrieves the line number of the task node within the project file that called it.

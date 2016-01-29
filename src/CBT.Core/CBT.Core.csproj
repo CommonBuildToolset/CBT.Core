@@ -23,13 +23,9 @@
   <ItemGroup>
     <Compile Include="Internal\CoreUtility.cs" />
     <Compile Include="Internal\CBTBuildEngine.cs" />
-    <Compile Include="Internal\ITaskLogHelper.cs" />
-    <Compile Include="Internal\TaskLogHelper.cs" />
-    <Compile Include="ModulePropertyGenerator.cs" />
-    <Compile Include="Tasks\GenerateNuGetProperties.cs" />
+    <Compile Include="Internal\ModulePropertyGenerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tasks\RestoreModules.cs" />
-    <Compile Include="Tasks\TaskBase.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">

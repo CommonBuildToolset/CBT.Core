@@ -1,15 +1,14 @@
-﻿using System;
+﻿using Microsoft.Build.Construction;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
-using CBT.Core.Internal;
-using Microsoft.Build.Construction;
-using Microsoft.Build.Framework;
 
-namespace CBT.Core.Tasks
+namespace CBT.Core.Internal
 {
-    public sealed class GenerateNuGetProperties : TaskBase
+    internal sealed class ModulePropertyGenerator
     {
         /// <summary>
         /// The name of the 'ID' attribute in the NuGet packages.config.
@@ -26,42 +25,56 @@ namespace CBT.Core.Tasks
         /// </summary>
         private const string NuGetPackagesConfigVersionAttributeName = "version";
 
-        [Required]
-        public string OutputPath { get; set; }
-
-        [Required]
-        public string PropertyNamePrefix { get; set; }
-
-        public string PropertyValuePrefix { get; set; }
-
-        public bool IncludeAllVersions { get; set; }
-
-        public string[] PackageConfigPaths { get; set; }
-
-        public override bool Execute()
+        public bool GenerateModuleImports(string outputPath, string propertyNamePrefix, string propertyValuePrefix, string[] importFiles, string[] importRelativePaths, string[] packageConfigPaths, string[] moduleInputs)
         {
-            // Return if no package.config files were specified
-            //
-            if (PackageConfigPaths.Length == 0)
-            {
-                return false;
-            }
+            var importPaths = importFiles.Where(i => !String.IsNullOrWhiteSpace(i)).Select(i => Path.Combine(outputPath, i.Trim())).ToList();
 
-            // Determine if the output path is already up-to-date and do a no-op
-            //
-            if (File.Exists(OutputPath) && CoreUtility.IsFileOutOfDate(OutputPath, PackageConfigPaths))
+            if (!importPaths.Any(i => CoreUtility.IsFileOutOfDate(i, moduleInputs)))
             {
                 return true;
             }
 
-            ProjectRootElement project = CreateProjectWithNuGetProperties(PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, PackageConfigPaths);
+            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, false, packageConfigPaths);
 
-            project.Save(OutputPath);
+            foreach (string importFile in importPaths)
+            {
+                var importProject = ProjectRootElement.Create(importFile);
+
+                AddImports(importProject, importRelativePaths, project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)));
+
+                importProject.Save();
+            }
+            return true;
+        }
+
+        internal bool Generate(string outputPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] packageConfigPaths, string[] beforeModuleImports, string[] afterModuleImports)
+        {
+            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, includeAllVersions, packageConfigPaths);
+
+            if (beforeModuleImports != null)
+            {
+                foreach (var import in beforeModuleImports.Where(i => !String.IsNullOrWhiteSpace(i)).Select(project.AddImport))
+                {
+                    import.Condition = String.Format(" Exists('{0}') ", import.Project);
+                }
+            }
+
+            AddImports(project, importRelativePaths, project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)));
+
+            if (afterModuleImports != null)
+            {
+                foreach (var import in afterModuleImports.Where(i => !String.IsNullOrWhiteSpace(i)).Select(project.AddImport))
+                {
+                    import.Condition = String.Format(" Exists('{0}') ", import.Project);
+                }
+            }
+
+            project.Save(outputPath);
 
             return true;
         }
 
-        public static ProjectRootElement CreateProjectWithNuGetProperties(string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, params string[] packageConfigPaths)
+        private static ProjectRootElement CreateProjectWithNuGetProperties(string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, params string[] packageConfigPaths)
         {
             ProjectRootElement project = ProjectRootElement.Create();
 
@@ -134,6 +147,12 @@ namespace CBT.Core.Tasks
             return project;
         }
 
-        
+        private void AddImports(ProjectRootElement project, IEnumerable<string> importRelativePaths, IEnumerable<string> modulePaths)
+        {
+            foreach (var import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).SelectMany(modulePath => importRelativePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(importRelativePath => project.AddImport(Path.Combine(modulePath, importRelativePath)))))
+            {
+                import.Condition = String.Format("Exists('{0}')", import.Project);
+            }
+        }
     }
 }
