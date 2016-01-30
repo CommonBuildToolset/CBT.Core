@@ -104,39 +104,36 @@ namespace CBT.Core.Internal
                         string id = item.IdAttribute.Value;
                         string versionString = item.VersionAttribute.Value;
 
+                        // Generate the property name and value once
+                        //
+                        string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", propertyNamePrefix, id.Replace(".", "_"));
+                        string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", propertyValuePrefix, id, versionString);
+
+                        propertyGroup.SetProperty(propertyName, propertyValue);
+
                         Version version;
 
                         // Parse the version first to see if the package is a candidate for a property.  Valid versions include values like 'Highest' but these
                         //  can not be used for properties because only NuGet ends up knowing the version.  This code would have to query NuGet which would slow down parsing.
                         //
-                        if (Version.TryParse(versionString, out version))
+                        if (includeAllVersions && Version.TryParse(versionString, out version))
                         {
-                            // Generate the property name and value once
+                            // Include additional properties for each part of the version.  So if the package ID is 'CompanyA.Product' and the version is '1.20.300', you end up with these properties:
+                            // CompanyA_Product_1
+                            // CompanyA_Product_1_20
+                            // CompanyA_Product_1_20_300
                             //
-                            string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", propertyNamePrefix, id.Replace(".", "_"));
-                            string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", propertyValuePrefix, id, versionString);
+                            propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}", propertyName, version.Major), propertyValue);
 
-                            propertyGroup.SetProperty(propertyName, propertyValue);
+                            propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}", propertyName, version.Major, version.Minor), propertyValue);
 
-                            if (includeAllVersions)
+                            if (version.Build > -1)
                             {
-                                // Include additional properties for each part of the version.  So if the package ID is 'CompanyA.Product' and the version is '1.20.300', you end up with these properties:
-                                // CompanyA_Product_1
-                                // CompanyA_Product_1_20
-                                // CompanyA_Product_1_20_300
-                                //
-                                propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}", propertyName, version.Major), propertyValue);
+                                propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}_{3}", propertyName, version.Major, version.Minor, version.Build), propertyValue);
 
-                                propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}", propertyName, version.Major, version.Minor), propertyValue);
-
-                                if (version.Build > -1)
+                                if (version.Revision > -1)
                                 {
-                                    propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}_{3}", propertyName, version.Major, version.Minor, version.Build), propertyValue);
-
-                                    if (version.Revision > -1)
-                                    {
-                                        propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}_{3}_{4}", propertyName, version.Major, version.Minor, version.Build, version.Revision), propertyValue);
-                                    }
+                                    propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}_{3}_{4}", propertyName, version.Major, version.Minor, version.Build, version.Revision), propertyValue);
                                 }
                             }
                         }

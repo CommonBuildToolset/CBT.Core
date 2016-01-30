@@ -30,7 +30,7 @@ namespace CBT.Core.Internal
 
             long lastWriteTime = File.GetLastWriteTimeUtc(path).Ticks;
 
-            return paths.Where(File.Exists).Any(item => File.GetLastWriteTimeUtc(item).Ticks > lastWriteTime);
+            return paths.Any(item => File.Exists(item) && File.GetLastWriteTimeUtc(item).Ticks > lastWriteTime);
         }
     }
 }
