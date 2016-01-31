@@ -54,7 +54,6 @@
     <CBTCoreAssemblyPath Condition=" '$(CBTCoreAssemblyPath)' == '' ">$(MSBuildThisFileDirectory)CBT.Core.dll</CBTCoreAssemblyPath>
 
     <CBTModulesRestoreTaskName Condition=" '$(CBTModulesRestoreTaskName)' == '' ">CBT.Core.Tasks.RestoreModules</CBTModulesRestoreTaskName>
-
     <CBTModuleRestoreCommand Condition=" '$(CBTModuleRestoreCommand)' == '' ">&quot;$(MSBuildThisFileDirectory)NuGet.exe&quot;</CBTModuleRestoreCommand>
     <CBTModuleRestoreArguments Condition=" '$(CBTModuleRestoreArguments)' == '' ">restore &quot;$(CBTModulesConfigPath)&quot; -OutputDirectory &quot;$(NuGetPackagesPath)&quot; -MSBuildVersion &quot;$(MSBuildToolsVersion)&quot; -NonInteractive</CBTModuleRestoreArguments>
     <CBTModuleRestoreInputs Condition=" '$(CBTModuleRestoreInputs)' == '' ">$(MSBuildThisFileFullPath);$(CBTCoreAssemblyPath);$(CBTModulesConfigPath)</CBTModuleRestoreInputs>
@@ -62,9 +61,15 @@
     <CBTModulesRestored Condition=" '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModulesRestoreTaskName)).Execute($(CBTModulePropsFile), $(CBTModuleRestoreCommand), $(CBTModuleRestoreArguments), $(CBTModulesConfigPath), $(NuGetPackagesPath), $(CBTModulesPropertyNamePrefix), $(CBTModulesPropertyValuePrefix), $(CBTModulePropertiesIncludeAllVersions), $(CBTModulesImportRelativePaths.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleImportsAfter.Split(';')), $(CBTModuleRestoreInputs.Split(';'))))</CBTModulesRestored>
     
   </PropertyGroup>
-  
 
   <Import Project="$(CBTModulePropsFile)" Condition=" '$(CBTModulesRestored)' == 'true' And Exists('$(CBTModulePropsFile)') "/>
+
+  <PropertyGroup>
+    <CBTModuleImportsPath Condition=" '$(CBTModuleImportPropsFile)' == '' ">$(CBTIntermediateOutputPath)\Extensions</CBTModuleImportsPath>
+    <CBTModuleImportFiles Condition=" '$(CBTModuleImportFiles)' == '' "></CBTModuleImportFiles>
+    <CBTModulesGenerateImportsTaskName Condition=" '$(CBTModulesGenerateImportsTaskName)' == '' ">CBT.Core.Tasks.GenerateModuleImports</CBTModulesGenerateImportsTaskName>
+    <CBTModuleImportsCreated Condition=" Exists($(CBTCoreAssemblyPath)) And '$(CBTModulesRestored)' == 'True' And '$(CBTModuleImportsCreated)' != 'True' ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModulesGenerateImportsTaskName)).Execute($(CBTModuleImportsPath), $(CBTModulesPropertyNamePrefix), $(CBTModulesPropertyValuePrefix), $(CBTModuleImportFiles.Split(';')), $(CBTModulesImportRelativePaths.Split(';')), $(CBTModulesConfigPath)))</CBTModuleImportsCreated>
+  </PropertyGroup>
 
   <UsingTask TaskName="RestoreModules" AssemblyFile="$(CBTCoreAssemblyPath)" />
   
@@ -93,17 +98,4 @@
 
   <Import Project="$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)" Condition=" '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)') " />
   
-  <!--<BaseIntermediateOutputPath Condition=" '$(BaseIntermediateOutputPath)'=='' ">$(MSBuildProjectDirectory)\obj</BaseIntermediateOutputPath>
-    <CBTIntermediateOutputBasePath Condition=" '$(CBTIntermediateOutputBasePath)' == '' ">$(BaseIntermediateOutputPath)CBT</CBTIntermediateOutputBasePath>-->
-  
-  <!--<PropertyGroup Condition=" '$(IntermediateOutputPath)' == '' And '$(Configuration)' != '' And '$(Platform)' != '' ">
-    <IntermediateOutputPath Condition=" '$(Platform)' == 'AnyCPU' ">$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
-    <IntermediateOutputPath Condition=" '$(Platform)' != 'AnyCPU' ">$(BaseIntermediateOutputPath)$(Platform)\$(Configuration)\</IntermediateOutputPath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(OutputPath)' == '' And '$(Configuration)' != '' And '$(Platform)' != '' ">
-    --><!-- Default output path if $(Platform) and $(Configuration) are specified. --><!--
-    <OutputPath Condition=" '$(Platform)' == 'AnyCPU' ">$(MSBuildProjectDirectory)\bin\$(Configuration)\</OutputPath>
-    <OutputPath Condition=" '$(Platform)' != 'AnyCPU' ">$(MSBuildProjectDirectory)\bin\$(Configuration)\$(Platform)\</OutputPath>
-  </PropertyGroup>-->
 </Project>

@@ -25,29 +25,7 @@ namespace CBT.Core.Internal
         /// </summary>
         private const string NuGetPackagesConfigVersionAttributeName = "version";
 
-        public bool GenerateModuleImports(string outputPath, string propertyNamePrefix, string propertyValuePrefix, string[] importFiles, string[] importRelativePaths, string[] packageConfigPaths, string[] moduleInputs)
-        {
-            var importPaths = importFiles.Where(i => !String.IsNullOrWhiteSpace(i)).Select(i => Path.Combine(outputPath, i.Trim())).ToList();
-
-            if (!importPaths.Any(i => CoreUtility.IsFileOutOfDate(i, moduleInputs)))
-            {
-                return true;
-            }
-
-            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, false, packageConfigPaths);
-
-            foreach (string importFile in importPaths)
-            {
-                var importProject = ProjectRootElement.Create(importFile);
-
-                AddImports(importProject, importRelativePaths, project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)));
-
-                importProject.Save();
-            }
-            return true;
-        }
-
-        internal bool Generate(string outputPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] packageConfigPaths, string[] beforeModuleImports, string[] afterModuleImports)
+        public bool Generate(string outputPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] packageConfigPaths, string[] beforeModuleImports, string[] afterModuleImports)
         {
             ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, includeAllVersions, packageConfigPaths);
 
@@ -71,6 +49,21 @@ namespace CBT.Core.Internal
 
             project.Save(outputPath);
 
+            return true;
+        }
+
+        public bool GenerateModuleImports(string outputPath, string propertyNamePrefix, string propertyValuePrefix, string[] importFiles, string[] importRelativePaths, string[] packageConfigPaths)
+        {
+            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, false, packageConfigPaths);
+
+            var properties = project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
+
+            foreach (var importProject in importFiles.Where(i => !String.IsNullOrWhiteSpace(i)).Select(i => ProjectRootElement.Create(Path.Combine(outputPath, i.Trim()))))
+            {
+                AddImports(importProject, importRelativePaths, properties);
+
+                importProject.Save();
+            }
             return true;
         }
 
