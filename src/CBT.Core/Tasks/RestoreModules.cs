@@ -15,14 +15,17 @@ namespace CBT.Core.Tasks
             _log = new CBTTaskLogHelper(this);
         }
 
-        public string[] AfterModuleImports { get; set; }
+        public string[] AfterImports { get; set; }
 
-        public string[] BeforeModuleImports { get; set; }
+        public string[] BeforeImports { get; set; }
 
         /// <summary>
         /// Gets or sets the build engine associated with the task.
         /// </summary>
         public IBuildEngine BuildEngine { get; set; }
+
+        [Required]
+        public string ExtensionsPath { get; set; }
 
         /// <summary>
         /// Gets or sets any host object that is associated with the task.
@@ -31,12 +34,12 @@ namespace CBT.Core.Tasks
 
         public string[] ImportRelativePaths { get; set; }
 
+        [Required]
+        public string ImportsFile { get; set; }
+
         public bool IncludeAllVersions { get; set; }
 
-        public string[] ModuleInputs { get; set; }
-
-        [Required]
-        public string OutputFile { get; set; }
+        public string[] Inputs { get; set; }
 
         [Required]
         public string PackageConfig { get; set; }
@@ -51,16 +54,16 @@ namespace CBT.Core.Tasks
         public string PropertyValuePrefix { get; set; }
 
         [Required]
-        public string RestoreArguments { get; set; }
+        public string RestoreCommand { get; set; }
 
         [Required]
-        public string RestoreCommand { get; set; }
+        public string RestoreCommandArguments { get; set; }
 
         public bool Execute()
         {
             // Get a mutex name based on the output file
             //
-            string mutexName = OutputFile.GetHashCode().ToString("X");
+            string mutexName = ImportsFile.GetHashCode().ToString("X");
 
             using (var mutex = new Mutex(false, mutexName))
             {
@@ -75,9 +78,12 @@ namespace CBT.Core.Tasks
 
                     _log.LogMessage(MessageImportance.Low, "Create CBT module imports");
 
-                    ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator();
+                    ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(PackagesPath, PackageConfig);
 
-                    return modulePropertyGenerator.Generate(OutputFile, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, new[] {PackageConfig}, BeforeModuleImports, AfterModuleImports);
+                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, BeforeImports, AfterImports))
+                    {
+                        return false;
+                    }
                 }
                 catch (Exception e)
                 {
@@ -91,27 +97,30 @@ namespace CBT.Core.Tasks
                     mutex.ReleaseMutex();
                 }
             }
+
+            return true;
         }
 
-        public bool Execute(string outputFile, string restoreCommand, string restoreArguments, string packageConfig, string packagesPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports, string[] moduleInputs)
+        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string[] importRelativePaths, string importsFile, bool includeAllVersions, string[] inputs, string packageConfig, string packagesPath, string propertyNamePrefix, string propertyValuePrefix, string restoreCommand, string restoreCommandArguments)
         {
-            if (CoreUtility.IsFileUpToDate(outputFile, moduleInputs))
+            if (CoreUtility.IsFileUpToDate(importsFile, inputs))
             {
                 return true;
             }
 
+            AfterImports = afterImports;
+            BeforeImports = beforeImports;
+            ExtensionsPath = extensionsPath;
+            ImportRelativePaths = importRelativePaths;
+            ImportsFile = importsFile;
+            IncludeAllVersions = includeAllVersions;
+            Inputs = inputs;
             PackageConfig = packageConfig;
             PackagesPath = packagesPath;
             PropertyNamePrefix = propertyNamePrefix;
             PropertyValuePrefix = propertyValuePrefix;
-            OutputFile = outputFile;
             RestoreCommand = restoreCommand;
-            RestoreArguments = restoreArguments;
-            IncludeAllVersions = includeAllVersions;
-            ImportRelativePaths = importRelativePaths;
-            BeforeModuleImports = beforeModuleImports;
-            AfterModuleImports = afterModuleImports;
-            ModuleInputs = moduleInputs;
+            RestoreCommandArguments = restoreCommandArguments;
 
             BuildEngine = new CBTBuildEngine();
 
@@ -142,7 +151,7 @@ namespace CBT.Core.Tasks
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    Arguments = RestoreArguments,
+                    Arguments = RestoreCommandArguments,
                     CreateNoWindow = true,
                     FileName = RestoreCommand,
                     UseShellExecute = false,

@@ -1,9 +1,11 @@
 ﻿using Microsoft.Build.Construction;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace CBT.Core.Internal
@@ -25,9 +27,43 @@ namespace CBT.Core.Internal
         /// </summary>
         private const string NuGetPackagesConfigVersionAttributeName = "version";
 
-        public bool Generate(string outputPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] packageConfigPaths, string[] beforeModuleImports, string[] afterModuleImports)
+        private readonly string[] _packageConfigPaths;
+        private readonly Lazy<IDictionary<string, PackageInfo>> _packagesLazy;
+        private readonly string _packagesPath;
+
+        public ModulePropertyGenerator(string packagesPath, params string[] packageConfigPaths)
         {
-            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, includeAllVersions, packageConfigPaths);
+            if (String.IsNullOrWhiteSpace(packagesPath))
+            {
+                throw new ArgumentNullException("packagesPath");
+            }
+
+            if (!Directory.Exists(packagesPath))
+            {
+                throw new DirectoryNotFoundException(String.Format(CultureInfo.CurrentCulture, "Could not find part of the path '{0}'", packagesPath));
+            }
+
+            if (packageConfigPaths == null)
+            {
+                throw new ArgumentNullException("packageConfigPaths");
+            }
+
+            _packagesPath = packagesPath;
+            _packageConfigPaths = packageConfigPaths;
+
+            _packagesLazy = new Lazy<IDictionary<string, PackageInfo>>(ParsePackages, isThreadSafe: true);
+        }
+
+        public IDictionary<string, PackageInfo> Packages
+        {
+            get { return _packagesLazy.Value; }
+        }
+
+        public bool Generate(string outputPath, string extensionsPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports)
+        {
+            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, includeAllVersions, Packages);
+
+            var properties = project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
 
             if (beforeModuleImports != null)
             {
@@ -37,7 +73,7 @@ namespace CBT.Core.Internal
                 }
             }
 
-            AddImports(project, importRelativePaths, project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)));
+            AddImports(project, importRelativePaths, properties);
 
             if (afterModuleImports != null)
             {
@@ -49,25 +85,19 @@ namespace CBT.Core.Internal
 
             project.Save(outputPath);
 
-            return true;
-        }
-
-        public bool GenerateModuleImports(string outputPath, string propertyNamePrefix, string propertyValuePrefix, string[] importFiles, string[] importRelativePaths, string[] packageConfigPaths)
-        {
-            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, false, packageConfigPaths);
-
-            var properties = project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
-
-            foreach (var importProject in importFiles.Where(i => !String.IsNullOrWhiteSpace(i)).Select(i => ProjectRootElement.Create(Path.Combine(outputPath, i.Trim()))))
+            Parallel.ForEach(GetModuleExtensions(), i =>
             {
-                AddImports(importProject, importRelativePaths, properties);
+                var extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Trim()));
 
-                importProject.Save();
-            }
+                AddImports(extensionProject, importRelativePaths, properties);
+
+                extensionProject.Save();
+            });
+
             return true;
         }
 
-        private static ProjectRootElement CreateProjectWithNuGetProperties(string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, params string[] packageConfigPaths)
+        private static ProjectRootElement CreateProjectWithNuGetProperties(string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, IDictionary<string, PackageInfo> packages)
         {
             ProjectRootElement project = ProjectRootElement.Create();
 
@@ -75,60 +105,36 @@ namespace CBT.Core.Internal
 
             propertyGroup.SetProperty("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)");
 
-            foreach (var packageConfigPath in packageConfigPaths.Where(i => !String.IsNullOrWhiteSpace(i) && File.Exists(i)))
+            foreach (var item in packages.Values)
             {
-                XDocument document = XDocument.Load(packageConfigPath);
+                // Generate the property name and value once
+                //
+                string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", propertyNamePrefix, item.Id.Replace(".", "_"));
+                string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", propertyValuePrefix, item.Id, item.VersionString);
 
-                if (document.Root != null)
+                propertyGroup.SetProperty(propertyName, propertyValue);
+
+                // Parse the version first to see if the package is a candidate for a property.  Valid versions include values like 'Highest' but these
+                //  can not be used for properties because only NuGet ends up knowing the version.  This code would have to query NuGet which would slow down parsing.
+                //
+                if (includeAllVersions && item.Version != null)
                 {
-                    foreach (var item in document.Root.Elements(NuGetPackagesConfigPackageElementName).Select(i => new
+                    // Include additional properties for each part of the version.  So if the package ID is 'CompanyA.Product' and the version is '1.20.300', you end up with these properties:
+                    // CompanyA_Product_1
+                    // CompanyA_Product_1_20
+                    // CompanyA_Product_1_20_300
+                    //
+                    propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}", propertyName, item.Version.Major), propertyValue);
+
+                    propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}", propertyName, item.Version.Major, item.Version.Minor), propertyValue);
+
+                    if (item.Version.Build > -1)
                     {
-                        IdAttribute = i.Attribute(NuGetPackagesConfigIdAttributeName),
-                        VersionAttribute = i.Attribute(NuGetPackagesConfigVersionAttributeName),
-                    }))
-                    {
-                        // Skip packages that are missing an 'id' or 'version' attribute or if they specified value is an empty string
-                        //
-                        if (item.IdAttribute == null || item.VersionAttribute == null || String.IsNullOrWhiteSpace(item.IdAttribute.Value) || String.IsNullOrWhiteSpace(item.VersionAttribute.Value))
+                        propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}_{3}", propertyName, item.Version.Major, item.Version.Minor, item.Version.Build), propertyValue);
+
+                        if (item.Version.Revision > -1)
                         {
-                            continue;
-                        }
-
-                        string id = item.IdAttribute.Value;
-                        string versionString = item.VersionAttribute.Value;
-
-                        // Generate the property name and value once
-                        //
-                        string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", propertyNamePrefix, id.Replace(".", "_"));
-                        string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", propertyValuePrefix, id, versionString);
-
-                        propertyGroup.SetProperty(propertyName, propertyValue);
-
-                        Version version;
-
-                        // Parse the version first to see if the package is a candidate for a property.  Valid versions include values like 'Highest' but these
-                        //  can not be used for properties because only NuGet ends up knowing the version.  This code would have to query NuGet which would slow down parsing.
-                        //
-                        if (includeAllVersions && Version.TryParse(versionString, out version))
-                        {
-                            // Include additional properties for each part of the version.  So if the package ID is 'CompanyA.Product' and the version is '1.20.300', you end up with these properties:
-                            // CompanyA_Product_1
-                            // CompanyA_Product_1_20
-                            // CompanyA_Product_1_20_300
-                            //
-                            propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}", propertyName, version.Major), propertyValue);
-
-                            propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}", propertyName, version.Major, version.Minor), propertyValue);
-
-                            if (version.Build > -1)
-                            {
-                                propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}_{3}", propertyName, version.Major, version.Minor, version.Build), propertyValue);
-
-                                if (version.Revision > -1)
-                                {
-                                    propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}_{3}_{4}", propertyName, version.Major, version.Minor, version.Build, version.Revision), propertyValue);
-                                }
-                            }
+                            propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}_{3}_{4}", propertyName, item.Version.Major, item.Version.Minor, item.Version.Build, item.Version.Revision), propertyValue);
                         }
                     }
                 }
@@ -143,6 +149,78 @@ namespace CBT.Core.Internal
             {
                 import.Condition = String.Format("Exists('{0}')", import.Project);
             }
+        }
+
+        private ICollection<string> GetModuleExtensions()
+        {
+            ConcurrentDictionary<string, string> extensionImports = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            Parallel.ForEach(Packages.Values, packageInfo =>
+            {
+                var moduleConfigPath = Path.Combine(packageInfo.Path, "module.config");
+
+                if (File.Exists(moduleConfigPath))
+                {
+                    XDocument document = XDocument.Load(moduleConfigPath);
+
+                    if (document.Root != null)
+                    {
+                        var extensionImportsElement = document.Root.Element("extensionImports");
+
+                        if (extensionImportsElement != null)
+                        {
+                            foreach (var item in extensionImportsElement.Elements("add").Select(i => i.Attribute("name")).Where(i => i != null && !String.IsNullOrWhiteSpace(i.Value)).Select(i => i.Value))
+                            {
+                                extensionImports.TryAdd(item, item);
+                            }
+                        }
+                    }
+                }
+            });
+
+            return extensionImports.Keys;
+        }
+
+        private IDictionary<string, PackageInfo> ParsePackages()
+        {
+            IDictionary<string, PackageInfo> packages = new Dictionary<string, PackageInfo>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string packageConfigPath in _packageConfigPaths.Where(i => !String.IsNullOrWhiteSpace(i) && File.Exists(i)))
+            {
+                XDocument document = XDocument.Load(packageConfigPath);
+
+                if (document.Root != null)
+                {
+                    foreach (var item in document.Root.Elements(NuGetPackagesConfigPackageElementName).Select(i => new
+                    {
+                        Id = i.Attribute(NuGetPackagesConfigIdAttributeName) == null ? null : i.Attribute(NuGetPackagesConfigIdAttributeName).Value,
+                        Version = i.Attribute(NuGetPackagesConfigVersionAttributeName) == null ? null : i.Attribute(NuGetPackagesConfigVersionAttributeName).Value,
+                    }))
+                    {
+                        // Skip packages that are missing an 'id' or 'version' attribute or if they specified value is an empty string
+                        //
+                        if (item.Id == null || item.Version == null ||
+                            String.IsNullOrWhiteSpace(item.Id) ||
+                            String.IsNullOrWhiteSpace(item.Version))
+                        {
+                            continue;
+                        }
+
+                        PackageInfo packageInfo = new PackageInfo(item.Id, item.Version, Path.Combine(_packagesPath, String.Format("{0}.{1}", item.Id, item.Version)));
+
+                        if (packages.ContainsKey(packageInfo.Id))
+                        {
+                            packages[packageInfo.Id] = packageInfo;
+                        }
+                        else
+                        {
+                            packages.Add(packageInfo.Id, packageInfo);
+                        }
+                    }
+                }
+            }
+
+            return packages;
         }
     }
 }
