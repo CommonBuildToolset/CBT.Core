@@ -147,6 +147,7 @@ namespace CBT.Core.Tasks
                     FileName = RestoreCommand,
                     UseShellExecute = false,
                     RedirectStandardError = true,
+                    RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     WorkingDirectory = Environment.CurrentDirectory,
                 },
@@ -161,6 +162,8 @@ namespace CBT.Core.Tasks
                 {
                     throw new Exception(String.Format("Failed to start process \"{0} {1}\"", process.StartInfo.FileName, process.StartInfo.Arguments));
                 }
+
+                process.StandardInput.Close();
 
                 process.BeginErrorReadLine();
                 process.BeginOutputReadLine();
