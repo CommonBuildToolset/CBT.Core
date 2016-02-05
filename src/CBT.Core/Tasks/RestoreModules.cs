@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CBT.Core.Tasks
 {
@@ -84,7 +85,7 @@ namespace CBT.Core.Tasks
 
                     if (!File.Exists(RestoreCommand))
                     {
-                        if (!DownloadNuGet())
+                        if (!DownloadNuGet().Result)
                         {
                             return false;
                         }
@@ -117,7 +118,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        private bool DownloadNuGet()
+        private async Task<bool> DownloadNuGet()
         {
             _log.LogMessage("Downloading NuGet.");
 
@@ -132,7 +133,7 @@ namespace CBT.Core.Tasks
                         Directory.CreateDirectory(directory);
                     }
 
-                    webClient.DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", RestoreCommand);
+                    await webClient.DownloadFileTaskAsync("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", RestoreCommand).ConfigureAwait(continueOnCapturedContext: false);
                 }
                 catch (Exception e)
                 {
