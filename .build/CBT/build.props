@@ -54,7 +54,7 @@
     <CBTCoreAssemblyPath Condition=" '$(CBTCoreAssemblyPath)' == '' ">$(MSBuildThisFileDirectory)CBT.Core.dll</CBTCoreAssemblyPath>
 
     <CBTModuleRestoreTaskName Condition=" '$(CBTModuleRestoreTaskName)' == '' ">CBT.Core.Tasks.RestoreModules</CBTModuleRestoreTaskName>
-    <CBTModuleRestoreCommand Condition=" '$(CBTModuleRestoreCommand)' == '' ">&quot;$(MSBuildThisFileDirectory)NuGet.exe&quot;</CBTModuleRestoreCommand>
+    <CBTModuleRestoreCommand Condition=" '$(CBTModuleRestoreCommand)' == '' ">$(CBTIntermediateOutputPath)\NuGet.exe</CBTModuleRestoreCommand>
     <CBTModuleRestoreCommandArguments Condition=" '$(CBTModuleRestoreCommandArguments)' == '' ">restore &quot;$(CBTModulePackageConfigPath)&quot; -OutputDirectory &quot;$(NuGetPackagesPath)&quot; -MSBuildVersion &quot;$(MSBuildToolsVersion)&quot; -NonInteractive</CBTModuleRestoreCommandArguments>
     <CBTModuleRestoreInputs Condition=" '$(CBTModuleRestoreInputs)' == '' ">$(MSBuildThisFileFullPath);$(CBTCoreAssemblyPath);$(CBTModulePackageConfigPath)</CBTModuleRestoreInputs>
 

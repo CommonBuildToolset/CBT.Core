@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading;
 
 namespace CBT.Core.Tasks
@@ -56,7 +57,6 @@ namespace CBT.Core.Tasks
         [Required]
         public string PropertyValuePrefix { get; set; }
 
-        [Required]
         public string RestoreCommand { get; set; }
 
         [Required]
@@ -80,6 +80,16 @@ namespace CBT.Core.Tasks
 
                 try
                 {
+                    _log.LogMessage(MessageImportance.High, "Restore CBT modules:");
+
+                    if (!File.Exists(RestoreCommand))
+                    {
+                        if (!DownloadNuGet())
+                        {
+                            return false;
+                        }
+                    }
+
                     RestorePackages();
 
                     _log.LogMessage(MessageImportance.Low, "Create CBT module imports");
@@ -101,6 +111,25 @@ namespace CBT.Core.Tasks
                 finally
                 {
                     mutex.ReleaseMutex();
+                }
+            }
+
+            return true;
+        }
+
+        private bool DownloadNuGet()
+        {
+            _log.LogMessage("Downloading NuGet.");
+
+            using(WebClient webClient = new WebClient())
+            {
+                try
+                {
+                    webClient.DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", RestoreCommand);
+                }
+                catch (Exception e)
+                {
+                    _log.LogError(e.Message);
                 }
             }
 
@@ -150,8 +179,6 @@ namespace CBT.Core.Tasks
                     _log.LogError(args.Data);
                 }
             };
-
-            _log.LogMessage(MessageImportance.High, "Restore CBT modules:");
 
             Process process = new Process
             {
