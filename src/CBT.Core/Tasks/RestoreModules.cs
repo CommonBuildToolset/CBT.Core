@@ -2,10 +2,14 @@
 using Microsoft.Build.Framework;
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace CBT.Core.Tasks
 {
+    // TODO: Implement ICancelable task
+
     public sealed class RestoreModules : ITask
     {
         private readonly CBTTaskLogHelper _log;
@@ -32,13 +36,12 @@ namespace CBT.Core.Tasks
         /// </summary>
         public ITaskHost HostObject { get; set; }
 
+        [Required]
         public string[] ImportRelativePaths { get; set; }
 
         [Required]
         public string ImportsFile { get; set; }
-
-        public bool IncludeAllVersions { get; set; }
-
+        
         public string[] Inputs { get; set; }
 
         [Required]
@@ -58,6 +61,9 @@ namespace CBT.Core.Tasks
 
         [Required]
         public string RestoreCommandArguments { get; set; }
+
+        [Required]
+        public string ConfigPath { get; set; }
 
         public bool Execute()
         {
@@ -80,7 +86,7 @@ namespace CBT.Core.Tasks
 
                     ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(PackagesPath, PackageConfig);
 
-                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, PropertyNamePrefix, PropertyValuePrefix, IncludeAllVersions, ImportRelativePaths, BeforeImports, AfterImports))
+                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, ConfigPath, PropertyNamePrefix, PropertyValuePrefix, ImportRelativePaths, BeforeImports, AfterImports))
                     {
                         return false;
                     }
@@ -101,19 +107,19 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string[] importRelativePaths, string importsFile, bool includeAllVersions, string[] inputs, string packageConfig, string packagesPath, string propertyNamePrefix, string propertyValuePrefix, string restoreCommand, string restoreCommandArguments)
+        public bool Execute(string[] afterImports, string[] beforeImports, string configPath, string extensionsPath, string[] importRelativePaths, string importsFile, string[] inputs, string packageConfig, string packagesPath, string propertyNamePrefix, string propertyValuePrefix, string restoreCommand, string restoreCommandArguments)
         {
-            if (CoreUtility.IsFileUpToDate(importsFile, inputs))
+            if (IsFileUpToDate(importsFile, inputs))
             {
                 return true;
             }
 
             AfterImports = afterImports;
             BeforeImports = beforeImports;
+            ConfigPath = configPath;
             ExtensionsPath = extensionsPath;
             ImportRelativePaths = importRelativePaths;
             ImportsFile = importsFile;
-            IncludeAllVersions = includeAllVersions;
             Inputs = inputs;
             PackageConfig = packageConfig;
             PackagesPath = packagesPath;
@@ -206,6 +212,30 @@ namespace CBT.Core.Tasks
             }
 
             _log.LogMessage("Successfully restored CBT module packages");
+        }
+
+        /// <summary>
+        /// Determines if a file is up-to-date in relation to the specified paths.
+        /// </summary>
+        /// <param name="input">The file to check if it is out-of-date.</param>
+        /// <param name="outputs">The list of files to check against.</param>
+        /// <returns><code>true</code> if the file does not exist or it is older than any of the other files.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="input"/> is <code>null</code>.</exception>
+        private static bool IsFileUpToDate(string input, params string[] outputs)
+        {
+            if (String.IsNullOrWhiteSpace(input))
+            {
+                throw new ArgumentNullException("input");
+            }
+
+            if (!File.Exists(input) || outputs == null || outputs.Length == 0)
+            {
+                return false;
+            }
+
+            long lastWriteTime = File.GetLastWriteTimeUtc(input).Ticks;
+
+            return outputs.All(output => File.Exists(output) && File.GetLastWriteTimeUtc(output).Ticks <= lastWriteTime);
         }
     }
 }

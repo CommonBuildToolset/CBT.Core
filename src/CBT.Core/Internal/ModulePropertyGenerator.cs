@@ -28,7 +28,7 @@ namespace CBT.Core.Internal
         private const string NuGetPackagesConfigVersionAttributeName = "version";
 
         private readonly string[] _packageConfigPaths;
-        private readonly Lazy<IDictionary<string, PackageInfo>> _packagesLazy;
+        private readonly IDictionary<string, PackageInfo> _packages;
         private readonly string _packagesPath;
 
         public ModulePropertyGenerator(string packagesPath, params string[] packageConfigPaths)
@@ -51,17 +51,12 @@ namespace CBT.Core.Internal
             _packagesPath = packagesPath;
             _packageConfigPaths = packageConfigPaths;
 
-            _packagesLazy = new Lazy<IDictionary<string, PackageInfo>>(ParsePackages, isThreadSafe: true);
+            _packages = ParsePackages();
         }
 
-        public IDictionary<string, PackageInfo> Packages
+        public bool Generate(string outputPath, string extensionsPath, string moduleConfigPath, string propertyNamePrefix, string propertyValuePrefix, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports)
         {
-            get { return _packagesLazy.Value; }
-        }
-
-        public bool Generate(string outputPath, string extensionsPath, string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports)
-        {
-            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix, includeAllVersions, Packages);
+            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix);
 
             var properties = project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
 
@@ -85,9 +80,9 @@ namespace CBT.Core.Internal
 
             project.Save(outputPath);
 
-            Parallel.ForEach(GetModuleExtensions(), i =>
+            Parallel.ForEach(GetModuleExtensions(moduleConfigPath), i =>
             {
-                var extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Trim()));
+                var extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Key.Trim()));
 
                 AddImports(extensionProject, importRelativePaths, properties);
 
@@ -95,52 +90,6 @@ namespace CBT.Core.Internal
             });
 
             return true;
-        }
-
-        private static ProjectRootElement CreateProjectWithNuGetProperties(string propertyNamePrefix, string propertyValuePrefix, bool includeAllVersions, IDictionary<string, PackageInfo> packages)
-        {
-            ProjectRootElement project = ProjectRootElement.Create();
-
-            ProjectPropertyGroupElement propertyGroup = project.AddPropertyGroup();
-
-            propertyGroup.SetProperty("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)");
-
-            foreach (var item in packages.Values)
-            {
-                // Generate the property name and value once
-                //
-                string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", propertyNamePrefix, item.Id.Replace(".", "_"));
-                string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", propertyValuePrefix, item.Id, item.VersionString);
-
-                propertyGroup.SetProperty(propertyName, propertyValue);
-
-                // Parse the version first to see if the package is a candidate for a property.  Valid versions include values like 'Highest' but these
-                //  can not be used for properties because only NuGet ends up knowing the version.  This code would have to query NuGet which would slow down parsing.
-                //
-                if (includeAllVersions && item.Version != null)
-                {
-                    // Include additional properties for each part of the version.  So if the package ID is 'CompanyA.Product' and the version is '1.20.300', you end up with these properties:
-                    // CompanyA_Product_1
-                    // CompanyA_Product_1_20
-                    // CompanyA_Product_1_20_300
-                    //
-                    propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}", propertyName, item.Version.Major), propertyValue);
-
-                    propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}", propertyName, item.Version.Major, item.Version.Minor), propertyValue);
-
-                    if (item.Version.Build > -1)
-                    {
-                        propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}_{3}", propertyName, item.Version.Major, item.Version.Minor, item.Version.Build), propertyValue);
-
-                        if (item.Version.Revision > -1)
-                        {
-                            propertyGroup.SetProperty(String.Format(CultureInfo.CurrentCulture, "{0}_{1}_{2}_{3}_{4}", propertyName, item.Version.Major, item.Version.Minor, item.Version.Build, item.Version.Revision), propertyValue);
-                        }
-                    }
-                }
-            }
-
-            return project;
         }
 
         private void AddImports(ProjectRootElement project, IEnumerable<string> importRelativePaths, IEnumerable<string> modulePaths)
@@ -151,17 +100,38 @@ namespace CBT.Core.Internal
             }
         }
 
-        private ICollection<string> GetModuleExtensions()
+        private ProjectRootElement CreateProjectWithNuGetProperties(string propertyNamePrefix, string propertyValuePrefix)
+        {
+            ProjectRootElement project = ProjectRootElement.Create();
+
+            ProjectPropertyGroupElement propertyGroup = project.AddPropertyGroup();
+
+            propertyGroup.SetProperty("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)");
+
+            foreach (var item in _packages.Values)
+            {
+                // Generate the property name and value once
+                //
+                string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", propertyNamePrefix, item.Id.Replace(".", "_"));
+                string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", propertyValuePrefix, item.Id, item.VersionString);
+
+                propertyGroup.SetProperty(propertyName, propertyValue);
+            }
+
+            return project;
+        }
+
+        private IDictionary<string, string> GetModuleExtensions(string moduleConfigPath)
         {
             ConcurrentDictionary<string, string> extensionImports = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            Parallel.ForEach(Packages.Values, packageInfo =>
+            Parallel.ForEach(_packages.Values, packageInfo =>
             {
-                var moduleConfigPath = Path.Combine(packageInfo.Path, "module.config");
+                var path = Path.Combine(packageInfo.Path, moduleConfigPath);
 
-                if (File.Exists(moduleConfigPath))
+                if (File.Exists(path))
                 {
-                    XDocument document = XDocument.Load(moduleConfigPath);
+                    XDocument document = XDocument.Load(path);
 
                     if (document.Root != null)
                     {
@@ -171,14 +141,14 @@ namespace CBT.Core.Internal
                         {
                             foreach (var item in extensionImportsElement.Elements("add").Select(i => i.Attribute("name")).Where(i => i != null && !String.IsNullOrWhiteSpace(i.Value)).Select(i => i.Value))
                             {
-                                extensionImports.TryAdd(item, item);
+                                extensionImports.TryAdd(item, packageInfo.Id);
                             }
                         }
                     }
                 }
             });
 
-            return extensionImports.Keys;
+            return extensionImports;
         }
 
         private IDictionary<string, PackageInfo> ParsePackages()
