@@ -33,6 +33,7 @@
 
     <NuGetPackagesPath Condition=" '$(NuGetPackagesPath)' == '' And '$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*'">$([System.IO.Path]::Combine($(SolutionDir), 'packages'))</NuGetPackagesPath>
     <NuGetPackagesPath Condition=" '$(NuGetPackagesPath)' == '' ">$([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($(MSBuildProjectDirectory))), 'packages'))</NuGetPackagesPath>
+    <NuGetConfigPath Condition=" '$(NuGetConfigPath)' == '' And Exists('$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), NuGet.config))\NuGet.config') ">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), 'NuGet.config'))\NuGet.config</NuGetConfigPath>
   </PropertyGroup>
 
   <!-- Load modules -->
@@ -55,7 +56,7 @@
 
     <CBTModuleRestoreTaskName Condition=" '$(CBTModuleRestoreTaskName)' == '' ">CBT.Core.Tasks.RestoreModules</CBTModuleRestoreTaskName>
     <CBTModuleRestoreCommand Condition=" '$(CBTModuleRestoreCommand)' == '' ">$(CBTIntermediateOutputPath)\NuGet.exe</CBTModuleRestoreCommand>
-    <CBTModuleRestoreCommandArguments Condition=" '$(CBTModuleRestoreCommandArguments)' == '' ">restore &quot;$(CBTModulePackageConfigPath)&quot; -OutputDirectory &quot;$(NuGetPackagesPath)&quot; -MSBuildVersion &quot;$(MSBuildToolsVersion)&quot; -NonInteractive</CBTModuleRestoreCommandArguments>
+    <CBTModuleRestoreCommandArguments Condition=" '$(CBTModuleRestoreCommandArguments)' == '' ">restore &quot;$(CBTModulePackageConfigPath)&quot; -OutputDirectory &quot;$(NuGetPackagesPath)&quot; -ConfigFile &quot;$(NuGetConfigPath)&quot; -MSBuildVersion &quot;$(MSBuildToolsVersion)&quot; -NonInteractive</CBTModuleRestoreCommandArguments>
     <CBTModuleRestoreInputs Condition=" '$(CBTModuleRestoreInputs)' == '' ">$(MSBuildThisFileFullPath);$(CBTCoreAssemblyPath);$(CBTModulePackageConfigPath)</CBTModuleRestoreInputs>
 
     <CBTModulesRestored Condition=" '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleConfigPath), $(CBTModuleExtensionsPath), $(CBTModuleImportRelativePaths.Split(';')), $(CBTModulePropertiesFile), $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTModulePropertyNamePrefix), $(CBTModulePropertyValuePrefix), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments)))</CBTModulesRestored>
