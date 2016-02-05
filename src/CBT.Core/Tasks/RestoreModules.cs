@@ -125,6 +125,13 @@ namespace CBT.Core.Tasks
             {
                 try
                 {
+                    string directory = Path.GetDirectoryName(RestoreCommand);
+
+                    if(!String.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                    {
+                        Directory.CreateDirectory(directory);
+                    }
+
                     webClient.DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", RestoreCommand);
                 }
                 catch (Exception e)
@@ -237,8 +244,6 @@ namespace CBT.Core.Tasks
                 process.OutputDataReceived -= outputDataReceived;
                 process.ErrorDataReceived -= errorDataReceived;
             }
-
-            _log.LogMessage("Successfully restored CBT module packages");
         }
 
         /// <summary>
