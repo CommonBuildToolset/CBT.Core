@@ -10,8 +10,12 @@ using System.Threading.Tasks;
 
 namespace CBT.Core.Tasks
 {
-    public sealed class RestoreModules : ICancelableTask
+    public sealed class RestoreModules : ICancelableTask, IDisposable
     {
+        private const string NuGetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe";
+
+        private static readonly TimeSpan RestoreTimeout = TimeSpan.FromMinutes(30);
+
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         private readonly CBTTaskLogHelper _log;
@@ -69,6 +73,11 @@ namespace CBT.Core.Tasks
         public void Cancel()
         {
             _cancellationTokenSource.Cancel();
+        }
+
+        public void Dispose()
+        {
+            _cancellationTokenSource.Dispose();
         }
 
         public bool Execute()
@@ -188,8 +197,6 @@ namespace CBT.Core.Tasks
 
         private async Task<bool> DownloadNuGet()
         {
-            bool success = false;
-
             _log.LogMessage("Downloading NuGet.");
 
             using (WebClient webClient = new WebClient())
@@ -203,9 +210,9 @@ namespace CBT.Core.Tasks
                         Directory.CreateDirectory(directory);
                     }
 
-                    await webClient.DownloadFileTaskAsync("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", RestoreCommand).ContinueWith(task => { }, _cancellationTokenSource.Token);
+                    await webClient.DownloadFileTaskAsync(NuGetUrl, RestoreCommand).ContinueWith(task => { }, _cancellationTokenSource.Token);
 
-                    success = true;
+                    return true;
                 }
                 catch (TaskCanceledException)
                 {
@@ -217,46 +224,33 @@ namespace CBT.Core.Tasks
                 }
             }
 
-            while (!success && File.Exists(RestoreCommand))
+            if (File.Exists(RestoreCommand))
             {
-                try
+                // Delete any file that was partially downloaded when cancelling
+                //
+                for (int i = 0; i < 10; i++)
                 {
-                    File.Delete(RestoreCommand);
-                }
-                catch (Exception)
-                {
-                    // ignored
-                }
+                    try
+                    {
+                        File.Delete(RestoreCommand);
+                        break;
+                    }
+                    catch (Exception)
+                    {
+                        // Ignored because in some cases the file is in use still
+                        //
+                    }
 
-                await Task.Delay(TimeSpan.FromMilliseconds(100));
+                    await Task.Delay(TimeSpan.FromMilliseconds(200));
+                }
             }
-
-            return success;
+            return false;
         }
 
         private bool RestorePackages()
         {
-            ManualResetEvent processExited = new ManualResetEvent(false);
-
-            DataReceivedEventHandler outputDataReceived = (sender, args) =>
-            {
-                if (args != null && !String.IsNullOrWhiteSpace(args.Data))
-                {
-                    _log.LogMessage(args.Data);
-                }
-            };
-
-            DataReceivedEventHandler errorDataReceived = (sender, args) =>
-            {
-                if (args != null && !String.IsNullOrWhiteSpace(args.Data))
-                {
-                    _log.LogError(args.Data);
-                }
-            };
-
-            EventHandler processExitedEventHandler = (sender, args) => processExited.Set();
-
-            Process process = new Process
+            using (ManualResetEvent processExited = new ManualResetEvent(false))
+            using (Process process = new Process
             {
                 EnableRaisingEvents = true,
                 StartInfo = new ProcessStartInfo
@@ -270,14 +264,28 @@ namespace CBT.Core.Tasks
                     RedirectStandardOutput = true,
                     WorkingDirectory = Environment.CurrentDirectory,
                 },
-            };
-
-            process.OutputDataReceived += outputDataReceived;
-            process.ErrorDataReceived += errorDataReceived;
-            process.Exited += processExitedEventHandler;
-
-            try
+            })
             {
+                process.ErrorDataReceived += (sender, args) =>
+                {
+                    if (args != null && !String.IsNullOrWhiteSpace(args.Data))
+                    {
+                        _log.LogError(args.Data);
+                    }
+                };
+
+                process.OutputDataReceived += (sender, args) =>
+                {
+                    if (args != null && !String.IsNullOrWhiteSpace(args.Data))
+                    {
+                        _log.LogMessage(args.Data);
+                    }
+                };
+
+                process.Exited += (sender, args) => processExited.Set();
+
+                _log.LogMessage(MessageImportance.Low, "{0} {1}", process.StartInfo.FileName, process.StartInfo.Arguments);
+
                 if (!process.Start())
                 {
                     throw new Exception(String.Format("Failed to start process \"{0} {1}\"", process.StartInfo.FileName, process.StartInfo.Arguments));
@@ -288,7 +296,7 @@ namespace CBT.Core.Tasks
                 process.BeginErrorReadLine();
                 process.BeginOutputReadLine();
 
-                int eventIndex = WaitHandle.WaitAny(new[] {processExited, _cancellationTokenSource.Token.WaitHandle}, TimeSpan.FromMinutes(30));
+                int eventIndex = WaitHandle.WaitAny(new[] {processExited, _cancellationTokenSource.Token.WaitHandle}, RestoreTimeout);
 
                 if (eventIndex == 0)
                 {
@@ -299,30 +307,23 @@ namespace CBT.Core.Tasks
 
                     return true;
                 }
-                else
+                
+                if (!process.HasExited)
                 {
-                    if (!process.HasExited)
+                    try
                     {
-                        try
-                        {
-                            process.Kill();
-                        }
-                        catch (Exception e)
-                        {
-                            _log.LogMessage("Exception occurred while ending process: {0}", e.Message);
-                        }
+                        process.Kill();
                     }
-                    if (eventIndex == WaitHandle.WaitTimeout)
+                    catch (Exception e)
                     {
-                        throw new Exception("Timed out waiting for the CBT module restore command to complete.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.");
+                        _log.LogMessage("Exception occurred while ending process: {0}", e.Message);
                     }
                 }
-            }
-            finally
-            {
-                process.OutputDataReceived -= outputDataReceived;
-                process.ErrorDataReceived -= errorDataReceived;
-                process.Exited -= processExitedEventHandler;
+
+                if (eventIndex == WaitHandle.WaitTimeout)
+                {
+                    throw new Exception("Timed out waiting for the CBT module restore command to complete.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.");
+                }
             }
 
             return false;
