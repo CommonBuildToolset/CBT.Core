@@ -199,34 +199,46 @@ namespace CBT.Core.Tasks
         {
             _log.LogMessage("Downloading NuGet.");
 
-            using (WebClient webClient = new WebClient())
+            try
             {
-                try
+                string directory = Path.GetDirectoryName(RestoreCommand);
+
+                if (!String.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
                 {
-                    string directory = Path.GetDirectoryName(RestoreCommand);
+                    Directory.CreateDirectory(directory);
+                }
 
-                    if (!String.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                var downloadTask = Task.Run(() =>
+                {
+                    using (WebClient webClient = new WebClient())
                     {
-                        Directory.CreateDirectory(directory);
+                        webClient.DownloadFile(new Uri(NuGetUrl), RestoreCommand);
                     }
+                }, _cancellationTokenSource.Token);
 
-                    await webClient.DownloadFileTaskAsync(NuGetUrl, RestoreCommand).ContinueWith(task => { }, _cancellationTokenSource.Token);
+                var timeoutTask = Task.Delay(TimeSpan.FromMinutes(2), _cancellationTokenSource.Token);
 
+                var completedTask = await Task.WhenAny(downloadTask, timeoutTask).ConfigureAwait(continueOnCapturedContext: false);
+
+                if (completedTask == downloadTask)
+                {
                     return true;
                 }
-                catch (TaskCanceledException)
-                {
-                    webClient.CancelAsync();
-                }
-                catch (Exception e)
-                {
-                    _log.LogError(e.ToString());
-                }
+
+                _log.LogError("Timed out downloading NuGet from '{0}'", NuGetUrl);
+            }
+            catch (TaskCanceledException)
+            {
+                // Ignored because we're canceling
+            }
+            catch (Exception e)
+            {
+                _log.LogError(e.ToString());
             }
 
             if (File.Exists(RestoreCommand))
             {
-                // Delete any file that was partially downloaded when cancelling
+                // Delete any file that was partially downloaded when canceling
                 //
                 for (int i = 0; i < 10; i++)
                 {
@@ -241,7 +253,7 @@ namespace CBT.Core.Tasks
                         //
                     }
 
-                    await Task.Delay(TimeSpan.FromMilliseconds(200));
+                    Thread.Sleep(TimeSpan.FromMilliseconds(200));
                 }
             }
             return false;
@@ -307,7 +319,7 @@ namespace CBT.Core.Tasks
 
                     return true;
                 }
-                
+
                 if (!process.HasExited)
                 {
                     try
