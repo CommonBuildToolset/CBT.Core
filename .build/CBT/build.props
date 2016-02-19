@@ -13,7 +13,7 @@
     <CBTGlobalPath>$(CBTGlobalPath.TrimEnd('\\'))</CBTGlobalPath>
 
     <!-- Default CBT local to ..\Local if not specified -->
-    <CBTLocalPath Condition=" '$(CBTLocalPath)' == '' And Exists('$([System.IO.Path]::GetDirectoryName($(CBTGlobalPath)))\Local')">$([System.IO.Path]::GetDirectoryName($(CBTGlobalPath)))\Local</CBTLocalPath>
+    <CBTLocalPath Condition=" '$(CBTLocalPath)' == '' And Exists('$([System.IO.Path]::GetDirectoryName($(CBTGlobalPath)))\Local') ">$([System.IO.Path]::GetDirectoryName($(CBTGlobalPath)))\Local</CBTLocalPath>
     <CBTLocalPath>$(CBTLocalPath.TrimEnd('\\'))</CBTLocalPath>
 
     <CBTLocalBuildExtensionsPath Condition=" '$(CBTLocalBuildExtensionsPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\Extensions\$(MSBuildToolsVersion)') ">$(CBTLocalPath)\Extensions\$(MSBuildToolsVersion)</CBTLocalBuildExtensionsPath>
@@ -44,7 +44,7 @@
     <CBTIntermediateOutputPath Condition=" '$(CBTIntermediateOutputPath)' == '' ">$([System.IO.Path]::GetTempPath())\CBT\$(EnlistmentRoot.ToLower().GetHashcode().ToString('X'))</CBTIntermediateOutputPath>
 
     <!-- Default path to the config file containing CBT modules -->
-    <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\packages.config')">$(CBTLocalPath)\CBTModules\packages.config</CBTModulePackageConfigPath>
+    <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\packages.config') ">$(CBTLocalPath)\CBTModules\packages.config</CBTModulePackageConfigPath>
     <CBTModuleConfigPath Condition=" '$(CBTModuleConfigPath)' == '' ">CBT\Module\module.config</CBTModuleConfigPath>
     <CBTModulePath Condition=" '$(CBTModulePath)' == '' ">$(CBTIntermediateOutputPath)\Modules</CBTModulePath>
     <CBTModulePropertiesFile Condition=" '$(CBTModulePropertiesFile)' == '' ">$(CBTModulePath)\$(MSBuildThisFile)</CBTModulePropertiesFile>
