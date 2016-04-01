@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Build.Construction;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using Shouldly;
 
 namespace CBT.Core.UnitTests
@@ -10,18 +10,18 @@ namespace CBT.Core.UnitTests
     /// <summary>
     /// Tests to verify the core build.props file.
     /// </summary>
-    [TestClass]
+    [TestFixture]
     public class BuildPropsTest
     {
         private ProjectRootElement _project;
 
-        [TestInitialize]
+        [TestFixtureSetUp]
         public void TestInitialize()
         {
             _project = ProjectRootElement.Open("build.props");
         }
 
-        [TestMethod]
+        [Test]
         [Description("Verifies that required properties exist in the build.props file.")]
         public void RequiredPropertiesTest()
         {
@@ -80,7 +80,7 @@ namespace CBT.Core.UnitTests
             localBuildExtensionsPathProperty[1].Value.ShouldBe(String.Format(@"$({0})\Extensions", localPathProperty[0].Name));
         }
 
-        [TestMethod]
+        [Test]
         [Description("Verifies that the RestoreCBTModules target and RestoreModules task are properly defined.")]
         public void RestoreCBTModulesTargetTest()
         {
@@ -137,7 +137,7 @@ namespace CBT.Core.UnitTests
             usingTask.AssemblyFile.ShouldBe("$(CBTCoreAssemblyPath)", Case.Insensitive);
         }
 
-        [TestMethod]
+        [Test]
         [Description("Verifies that imports are correct.")]
         public void ImportsTest()
         {
@@ -167,7 +167,7 @@ namespace CBT.Core.UnitTests
             var moduleImport = _project.Imports.FirstOrDefault(i => i.Project.Equals("$(CBTModulePropertiesFile)", StringComparison.OrdinalIgnoreCase));
 
             moduleImport.ShouldNotBe(null);
-            moduleImport.Condition.ShouldBe(" '$(CBTModulesRestored)' == 'true' And Exists('$(CBTModulePropertiesFile)') ");
+            moduleImport.Condition.ShouldBe(" ('$(CBTModulesRestored)' == 'true' Or '$(BuildingInsideVisualStudio)' == 'true') And Exists('$(CBTModulePropertiesFile)') ");
 
             moduleImport.Location.ShouldBeGreaterThan(secondPropertyGroup.Location, "The import of '$(CBTModulePropertiesFile)' should come after the second property group");
         }
