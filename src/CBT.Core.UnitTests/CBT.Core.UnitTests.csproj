@@ -21,7 +21,7 @@
       <Private>false</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
-    <Reference Include="$(NuGetPackagesPath)\Shouldly.2.6.0\lib\net40\Shouldly.dll">
+    <Reference Include="$(NuGetPath_Shouldly)\lib\net40\Shouldly.dll">
       <Name>Shouldly</Name>
       <Private>True</Private>
     </Reference>
@@ -41,7 +41,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CBT.Core\CBT.Core.csproj">
