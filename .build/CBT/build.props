@@ -64,7 +64,7 @@
 
   </PropertyGroup>
 
-  <Import Project="$(CBTModulePropertiesFile)" Condition=" '$(CBTModulesRestored)' == 'true' And Exists('$(CBTModulePropertiesFile)') "/>
+  <Import Project="$(CBTModulePropertiesFile)" Condition=" ('$(CBTModulesRestored)' == 'true' Or '$(BuildingInsideVisualStudio)' == 'true') And Exists('$(CBTModulePropertiesFile)') "/>
 
   <UsingTask TaskName="RestoreModules" AssemblyFile="$(CBTCoreAssemblyPath)" />
 
