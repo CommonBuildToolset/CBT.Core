@@ -1,0 +1,54 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CBT.Core", "CBT.Core\CBT.Core.csproj", "{3B843D72-26A8-4A77-B9D2-E90D1C5D521D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".build", ".build", "{B42133CC-7B5A-4546-91E9-C03C6A78454B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CBT", "CBT", "{9B4BA404-B156-4ADE-BF17-9E232525402E}"
+	ProjectSection(SolutionItems) = preProject
+		..\.build\CBT\build.props = ..\.build\CBT\build.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "local", "local", "{02A3180C-04D3-44DD-887B-CA5D6C251BF0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extensions", "Extensions", "{BA6595B3-53EA-4D90-BA46-3E7FA22D58F9}"
+	ProjectSection(SolutionItems) = preProject
+		..\.build\local\Extensions\Before.build.props = ..\.build\local\Extensions\Before.build.props
+		..\.build\local\Extensions\build.props = ..\.build\local\Extensions\build.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CBTModules", "CBTModules", "{578F8547-A15D-4DF0-ABD3-0FAA988F07D1}"
+	ProjectSection(SolutionItems) = preProject
+		..\.build\local\CBTModules\packages.config = ..\.build\local\CBTModules\packages.config
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CBT.Core.UnitTests", "CBT.Core.UnitTests\CBT.Core.UnitTests.csproj", "{85318209-7822-487F-BBC6-CEC5E5E3E167}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3B843D72-26A8-4A77-B9D2-E90D1C5D521D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B843D72-26A8-4A77-B9D2-E90D1C5D521D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B843D72-26A8-4A77-B9D2-E90D1C5D521D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B843D72-26A8-4A77-B9D2-E90D1C5D521D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{85318209-7822-487F-BBC6-CEC5E5E3E167}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{85318209-7822-487F-BBC6-CEC5E5E3E167}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{85318209-7822-487F-BBC6-CEC5E5E3E167}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{85318209-7822-487F-BBC6-CEC5E5E3E167}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9B4BA404-B156-4ADE-BF17-9E232525402E} = {B42133CC-7B5A-4546-91E9-C03C6A78454B}
+		{02A3180C-04D3-44DD-887B-CA5D6C251BF0} = {B42133CC-7B5A-4546-91E9-C03C6A78454B}
+		{BA6595B3-53EA-4D90-BA46-3E7FA22D58F9} = {02A3180C-04D3-44DD-887B-CA5D6C251BF0}
+		{578F8547-A15D-4DF0-ABD3-0FAA988F07D1} = {02A3180C-04D3-44DD-887B-CA5D6C251BF0}
+	EndGlobalSection
+EndGlobal
