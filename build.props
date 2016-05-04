@@ -4,7 +4,7 @@
     <EnlistmentRoot>$(MSBuildThisFileDirectory)</EnlistmentRoot>
     <DefaultProjectConfiguration Condition=" '$(DefaultProjectConfiguration)' == '' ">Debug</DefaultProjectConfiguration>
     <DefaultProjectPlatform Condition=" '$(DefaultProjectPlatform)' == '' ">AnyCPU</DefaultProjectPlatform>
-    <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.5</TargetFrameworkVersion>
   </PropertyGroup>
 
   <Import Project="$(EnlistmentRoot).build\CBT\build.props" />

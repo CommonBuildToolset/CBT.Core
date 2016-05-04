@@ -58,11 +58,11 @@ namespace CBT.Core.Internal
         {
             ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix);
 
-            var properties = project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
+            List<string> properties = project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
 
             if (beforeModuleImports != null)
             {
-                foreach (var import in beforeModuleImports.Where(i => !String.IsNullOrWhiteSpace(i)).Select(project.AddImport))
+                foreach (ProjectImportElement import in beforeModuleImports.Where(i => !String.IsNullOrWhiteSpace(i)).Select(project.AddImport))
                 {
                     import.Condition = String.Format(" Exists('{0}') ", import.Project);
                 }
@@ -72,7 +72,7 @@ namespace CBT.Core.Internal
 
             if (afterModuleImports != null)
             {
-                foreach (var import in afterModuleImports.Where(i => !String.IsNullOrWhiteSpace(i)).Select(project.AddImport))
+                foreach (ProjectImportElement import in afterModuleImports.Where(i => !String.IsNullOrWhiteSpace(i)).Select(project.AddImport))
                 {
                     import.Condition = String.Format(" Exists('{0}') ", import.Project);
                 }
@@ -82,7 +82,7 @@ namespace CBT.Core.Internal
 
             Parallel.ForEach(GetModuleExtensions(moduleConfigPath), i =>
             {
-                var extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Key.Trim()));
+                ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Key.Trim()));
 
                 AddImports(extensionProject, importRelativePaths, properties);
 
@@ -94,7 +94,7 @@ namespace CBT.Core.Internal
 
         private void AddImports(ProjectRootElement project, IEnumerable<string> importRelativePaths, IEnumerable<string> modulePaths)
         {
-            foreach (var import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).SelectMany(modulePath => importRelativePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(importRelativePath => project.AddImport(Path.Combine(modulePath, importRelativePath)))))
+            foreach (ProjectImportElement import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).SelectMany(modulePath => importRelativePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(importRelativePath => project.AddImport(Path.Combine(modulePath, importRelativePath)))))
             {
                 import.Condition = String.Format("Exists('{0}')", import.Project);
             }
@@ -108,7 +108,7 @@ namespace CBT.Core.Internal
 
             propertyGroup.SetProperty("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)");
 
-            foreach (var item in _packages.Values)
+            foreach (PackageInfo item in _packages.Values)
             {
                 // Generate the property name and value once
                 //
@@ -127,7 +127,7 @@ namespace CBT.Core.Internal
 
             Parallel.ForEach(_packages.Values, packageInfo =>
             {
-                var path = Path.Combine(packageInfo.Path, moduleConfigPath);
+                string path = Path.Combine(packageInfo.Path, moduleConfigPath);
 
                 if (File.Exists(path))
                 {
@@ -135,11 +135,11 @@ namespace CBT.Core.Internal
 
                     if (document.Root != null)
                     {
-                        var extensionImportsElement = document.Root.Element("extensionImports");
+                        XElement extensionImportsElement = document.Root.Element("extensionImports");
 
                         if (extensionImportsElement != null)
                         {
-                            foreach (var item in extensionImportsElement.Elements("add").Select(i => i.Attribute("name")).Where(i => i != null && !String.IsNullOrWhiteSpace(i.Value)).Select(i => i.Value))
+                            foreach (string item in extensionImportsElement.Elements("add").Select(i => i.Attribute("name")).Where(i => i != null && !String.IsNullOrWhiteSpace(i.Value)).Select(i => i.Value))
                             {
                                 extensionImports.TryAdd(item, packageInfo.Id);
                             }
