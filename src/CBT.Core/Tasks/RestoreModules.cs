@@ -137,7 +137,7 @@ namespace CBT.Core.Tasks
 
         public bool Execute(string[] afterImports, string[] beforeImports, string configPath, string extensionsPath, string[] importRelativePaths, string importsFile, string[] inputs, string packageConfig, string packagesPath, string propertyNamePrefix, string propertyValuePrefix, string restoreCommand, string restoreCommandArguments)
         {
-            if (IsFileUpToDate(importsFile, inputs))
+            if (Directory.Exists(packagesPath) && IsFileUpToDate(importsFile, inputs))
             {
                 return true;
             }
