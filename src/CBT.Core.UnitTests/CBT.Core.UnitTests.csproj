@@ -28,6 +28,22 @@
       <Name>nunit.framework</Name>
       <Private>True</Private>
     </Reference>
+    <Reference Include="$(NuGetPath_NUnitTestAdapter)\lib\nunit.core.dll">
+      <Name>nunit.core</Name>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="$(NuGetPath_NUnitTestAdapter)\lib\nunit.core.interfaces.dll">
+      <Name>nunit.core.interfaces</Name>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="$(NuGetPath_NUnitTestAdapter)\lib\nunit.util.dll">
+      <Name>nunit.util</Name>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="$(NuGetPath_NUnitTestAdapter)\lib\NUnit.VisualStudio.TestAdapter.dll">
+      <Name>NUnit.VisualStudio.TestAdapter</Name>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Xml" />
   </ItemGroup>
