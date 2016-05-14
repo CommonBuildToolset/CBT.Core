@@ -27,6 +27,10 @@ namespace CBT.Core.Internal
         /// </summary>
         private const string NuGetPackagesConfigVersionAttributeName = "version";
 
+        private const string PropertyNamePrefix = "CBTModule_";
+
+        private const string PropertyValuePrefix = @"$(NuGetPackagesPath)\";
+
         private readonly string[] _packageConfigPaths;
         private readonly IDictionary<string, PackageInfo> _packages;
         private readonly string _packagesPath;
@@ -54,11 +58,11 @@ namespace CBT.Core.Internal
             _packages = ParsePackages();
         }
 
-        public bool Generate(string outputPath, string extensionsPath, string moduleConfigPath, string propertyNamePrefix, string propertyValuePrefix, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports)
+        public bool Generate(string outputPath, string extensionsPath, string moduleConfigPath, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports)
         {
-            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix);
+            ProjectRootElement project = CreateProjectWithNuGetProperties();
 
-            List<string> properties = project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
+            List<string> properties = project.Properties.Where(i => i.Name.StartsWith(PropertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
 
             if (beforeModuleImports != null)
             {
@@ -100,7 +104,7 @@ namespace CBT.Core.Internal
             }
         }
 
-        private ProjectRootElement CreateProjectWithNuGetProperties(string propertyNamePrefix, string propertyValuePrefix)
+        private ProjectRootElement CreateProjectWithNuGetProperties()
         {
             ProjectRootElement project = ProjectRootElement.Create();
 
@@ -112,8 +116,8 @@ namespace CBT.Core.Internal
             {
                 // Generate the property name and value once
                 //
-                string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", propertyNamePrefix, item.Id.Replace(".", "_"));
-                string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", propertyValuePrefix, item.Id, item.VersionString);
+                string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", PropertyNamePrefix, item.Id.Replace(".", "_"));
+                string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", PropertyValuePrefix, item.Id, item.VersionString);
 
                 propertyGroup.SetProperty(propertyName, propertyValue);
             }

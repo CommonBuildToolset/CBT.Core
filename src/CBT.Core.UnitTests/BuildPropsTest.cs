@@ -34,8 +34,6 @@ namespace CBT.Core.UnitTests
                 {"CBTModulePath", null},
                 {"CBTModulePropertiesFile", null},
                 {"CBTModuleExtensionsPath", null},
-                {"CBTModulePropertyNamePrefix", null},
-                {"CBTModulePropertyValuePrefix", null},
                 {"CBTModuleImportRelativePaths", null},
                 {"CBTModuleImportsBefore", null},
                 {"CBTModuleImportsAfter", null},
@@ -110,8 +108,6 @@ namespace CBT.Core.UnitTests
                 {"ImportsFile", "$(CBTModulePropertiesFile)"},
                 {"PackageConfig", "$(CBTModulePackageConfigPath)"},
                 {"PackagesPath", "$(NuGetPackagesPath)"},
-                {"PropertyNamePrefix", "$(CBTModulePropertyNamePrefix)"},
-                {"PropertyValuePrefix", "$(CBTModulePropertyValuePrefix)"},
                 {"RestoreCommand", "$(CBTModuleRestoreCommand)"},
                 {"RestoreCommandArguments", "$(CBTModuleRestoreCommandArguments)"}
             });

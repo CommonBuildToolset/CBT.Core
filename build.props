@@ -2,8 +2,13 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <EnlistmentRoot>$(MSBuildThisFileDirectory)</EnlistmentRoot>
-    <DefaultProjectConfiguration Condition=" '$(DefaultProjectConfiguration)' == '' ">Debug</DefaultProjectConfiguration>
-    <DefaultProjectPlatform Condition=" '$(DefaultProjectPlatform)' == '' ">AnyCPU</DefaultProjectPlatform>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <BaseIntermediateOutputPath Condition=" '$(BaseIntermediateOutputPath)'=='' ">$(EnlistmentRoot)\obj</BaseIntermediateOutputPath>
+    <CBTIntermediateOutputPath Condition=" '$(CBTIntermediateOutputPath)' == '' ">$(BaseIntermediateOutputPath)\CBT</CBTIntermediateOutputPath>
+    <IntermediateOutputPath Condition=" '$(IntermediateOutputPath)'=='' ">$(BaseIntermediateOutputPath)\$(Configuration)\$(Platform)\$(MSBuildProjectFile)</IntermediateOutputPath>
+    <OutputPath Condition=" '$(OutputPath)' == '' ">$(EnlistmentRoot)\bin\$(Configuration)\$(Platform)\$(MSBuildProjectName)</OutputPath>
+    <NuGetPackagesPath Condition=" '$(NuGetPackagesPath)' == '' ">$(EnlistmentRoot)\packages</NuGetPackagesPath>
     <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.5</TargetFrameworkVersion>
   </PropertyGroup>
 

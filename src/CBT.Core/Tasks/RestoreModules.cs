@@ -59,12 +59,6 @@ namespace CBT.Core.Tasks
         [Required]
         public string PackagesPath { get; set; }
 
-        [Required]
-        public string PropertyNamePrefix { get; set; }
-
-        [Required]
-        public string PropertyValuePrefix { get; set; }
-
         public string RestoreCommand { get; set; }
 
         [Required]
@@ -114,7 +108,7 @@ namespace CBT.Core.Tasks
 
                     ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(PackagesPath, PackageConfig);
 
-                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, ConfigPath, PropertyNamePrefix, PropertyValuePrefix, ImportRelativePaths, BeforeImports, AfterImports))
+                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, ConfigPath, ImportRelativePaths, BeforeImports, AfterImports))
                     {
                         return false;
                     }
@@ -135,7 +129,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string configPath, string extensionsPath, string[] importRelativePaths, string importsFile, string[] inputs, string packageConfig, string packagesPath, string propertyNamePrefix, string propertyValuePrefix, string restoreCommand, string restoreCommandArguments)
+        public bool Execute(string[] afterImports, string[] beforeImports, string configPath, string extensionsPath, string[] importRelativePaths, string importsFile, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
         {
             if (Directory.Exists(packagesPath) && IsFileUpToDate(importsFile, inputs))
             {
@@ -151,8 +145,6 @@ namespace CBT.Core.Tasks
             Inputs = inputs;
             PackageConfig = packageConfig;
             PackagesPath = packagesPath;
-            PropertyNamePrefix = propertyNamePrefix;
-            PropertyValuePrefix = propertyValuePrefix;
             RestoreCommand = restoreCommand;
             RestoreCommandArguments = restoreCommandArguments;
 
