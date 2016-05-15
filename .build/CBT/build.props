@@ -5,7 +5,6 @@
     <!-- Ensures that if this file changes, projects will be rebuilt -->
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
 
-    <!-- TODO: Cause an error if EnlistmentRoot isn't set? -->
     <EnlistmentRoot>$(EnlistmentRoot.TrimEnd('\\'))</EnlistmentRoot>
 
     <!-- Default CBT global to this directory if not specified -->
