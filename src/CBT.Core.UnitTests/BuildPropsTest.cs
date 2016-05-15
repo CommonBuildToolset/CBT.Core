@@ -67,13 +67,10 @@ namespace CBT.Core.UnitTests
             localPathProperty[1].Value.ShouldBe(String.Format(@"$({0}.TrimEnd('\\'))", localPathProperty[1].Name), Case.Insensitive);
 
             var localBuildExtensionsPathProperty = _project.Properties.Where(i => i.Name.Equals("CBTLocalBuildExtensionsPath")).ToList();
-            localBuildExtensionsPathProperty.Count.ShouldBe(2);
+            localBuildExtensionsPathProperty.Count.ShouldBe(1);
 
-            localBuildExtensionsPathProperty[0].Condition.ShouldBe(String.Format(@" '$({0})' == '' And '$({1})' != '' And Exists('$({1})\Extensions\$(MSBuildToolsVersion)') ", localBuildExtensionsPathProperty[0].Name, localPathProperty[0].Name));
-            localBuildExtensionsPathProperty[0].Value.ShouldBe(String.Format(@"$({0})\Extensions\$(MSBuildToolsVersion)", localPathProperty[0].Name));
-
-            localBuildExtensionsPathProperty[1].Condition.ShouldBe(String.Format(@" '$({0})' == '' And '$({1})' != '' And Exists('$({1})\Extensions') ", localBuildExtensionsPathProperty[1].Name, localPathProperty[0].Name));
-            localBuildExtensionsPathProperty[1].Value.ShouldBe(String.Format(@"$({0})\Extensions", localPathProperty[0].Name));
+            localBuildExtensionsPathProperty[0].Condition.ShouldBe(String.Format(@" '$({0})' == '' And '$({1})' != '' And Exists('$({1})\Extensions') ", localBuildExtensionsPathProperty[0].Name, localPathProperty[0].Name));
+            localBuildExtensionsPathProperty[0].Value.ShouldBe(String.Format(@"$({0})\Extensions", localPathProperty[0].Name));
         }
 
         [Test]
