@@ -14,6 +14,8 @@ namespace CBT.Core.Internal
     {
         private const string ImportRelativePath = @"CBT\Module\$(MSBuildThisFile)";
 
+        private const string ModuleConfigPath = @"CBT\Module\module.config";
+
         /// <summary>
         /// The name of the 'ID' attribute in the NuGet packages.config.
         /// </summary>
@@ -60,7 +62,7 @@ namespace CBT.Core.Internal
             _packages = ParsePackages();
         }
 
-        public bool Generate(string outputPath, string extensionsPath, string moduleConfigPath, string[] beforeModuleImports, string[] afterModuleImports)
+        public bool Generate(string outputPath, string extensionsPath, string[] beforeModuleImports, string[] afterModuleImports)
         {
             ProjectRootElement project = CreateProjectWithNuGetProperties();
 
@@ -86,7 +88,7 @@ namespace CBT.Core.Internal
 
             project.Save(outputPath);
 
-            Parallel.ForEach(GetModuleExtensions(moduleConfigPath), i =>
+            Parallel.ForEach(GetModuleExtensions(), i =>
             {
                 ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Key.Trim()));
 
@@ -127,13 +129,13 @@ namespace CBT.Core.Internal
             return project;
         }
 
-        private IDictionary<string, string> GetModuleExtensions(string moduleConfigPath)
+        private IDictionary<string, string> GetModuleExtensions()
         {
             ConcurrentDictionary<string, string> extensionImports = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             Parallel.ForEach(_packages.Values, packageInfo =>
             {
-                string path = Path.Combine(packageInfo.Path, moduleConfigPath);
+                string path = Path.Combine(packageInfo.Path, ModuleConfigPath);
 
                 if (File.Exists(path))
                 {

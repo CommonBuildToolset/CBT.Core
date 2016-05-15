@@ -30,7 +30,6 @@ namespace CBT.Core.UnitTests
                 {"CBTCoreAssemblyPath", null},
                 {"CBTIntermediateOutputPath", null},
                 {"CBTModulePackageConfigPath", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\packages.config') "},
-                {"CBTModuleConfigPath", null},
                 {"CBTModulePath", null},
                 {"CBTModulePropertiesFile", null},
                 {"CBTModuleExtensionsPath", null},
@@ -101,7 +100,6 @@ namespace CBT.Core.UnitTests
             {
                 {"AfterImports", "$(CBTModuleImportsAfter.Split(';'))"},
                 {"BeforeImports", "$(CBTModuleImportsBefore.Split(';'))"},
-                {"ConfigPath", "$(CBTModuleConfigPath)"},
                 {"ExtensionsPath", "$(CBTModuleExtensionsPath)"},
                 {"ImportsFile", "$(CBTModulePropertiesFile)"},
                 {"PackageConfig", "$(CBTModulePackageConfigPath)"},

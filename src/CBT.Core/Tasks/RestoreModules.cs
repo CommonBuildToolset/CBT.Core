@@ -105,7 +105,7 @@ namespace CBT.Core.Tasks
 
                     ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(PackagesPath, PackageConfig);
 
-                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, ConfigPath, BeforeImports, AfterImports))
+                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, BeforeImports, AfterImports))
                     {
                         return false;
                     }
@@ -126,7 +126,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string configPath, string extensionsPath, string importsFile, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
+        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
         {
             if (Directory.Exists(packagesPath) && IsFileUpToDate(importsFile, inputs))
             {
@@ -135,7 +135,6 @@ namespace CBT.Core.Tasks
 
             AfterImports = afterImports;
             BeforeImports = beforeImports;
-            ConfigPath = configPath;
             ExtensionsPath = extensionsPath;
             ImportsFile = importsFile;
             Inputs = inputs;
