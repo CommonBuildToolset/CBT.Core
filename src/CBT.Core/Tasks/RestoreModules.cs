@@ -35,9 +35,6 @@ namespace CBT.Core.Tasks
         public IBuildEngine BuildEngine { get; set; }
 
         [Required]
-        public string ConfigPath { get; set; }
-
-        [Required]
         public string ExtensionsPath { get; set; }
 
         /// <summary>
