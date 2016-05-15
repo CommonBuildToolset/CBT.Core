@@ -16,7 +16,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "local", "local", "{02A3180C
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extensions", "Extensions", "{BA6595B3-53EA-4D90-BA46-3E7FA22D58F9}"
 	ProjectSection(SolutionItems) = preProject
-		..\.build\local\Extensions\Before.build.props = ..\.build\local\Extensions\Before.build.props
 		..\.build\local\Extensions\build.props = ..\.build\local\Extensions\build.props
 	EndProjectSection
 EndProject
