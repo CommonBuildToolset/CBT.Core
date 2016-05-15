@@ -12,6 +12,8 @@ namespace CBT.Core.Internal
 {
     internal sealed class ModulePropertyGenerator
     {
+        private const string ImportRelativePath = @"CBT\Module\$(MSBuildThisFile)";
+
         /// <summary>
         /// The name of the 'ID' attribute in the NuGet packages.config.
         /// </summary>
@@ -58,7 +60,7 @@ namespace CBT.Core.Internal
             _packages = ParsePackages();
         }
 
-        public bool Generate(string outputPath, string extensionsPath, string moduleConfigPath, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports)
+        public bool Generate(string outputPath, string extensionsPath, string moduleConfigPath, string[] beforeModuleImports, string[] afterModuleImports)
         {
             ProjectRootElement project = CreateProjectWithNuGetProperties();
 
@@ -72,7 +74,7 @@ namespace CBT.Core.Internal
                 }
             }
 
-            AddImports(project, importRelativePaths, properties);
+            AddImports(project, properties);
 
             if (afterModuleImports != null)
             {
@@ -88,7 +90,7 @@ namespace CBT.Core.Internal
             {
                 ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Key.Trim()));
 
-                AddImports(extensionProject, importRelativePaths, properties);
+                AddImports(extensionProject, properties);
 
                 extensionProject.Save();
             });
@@ -96,9 +98,9 @@ namespace CBT.Core.Internal
             return true;
         }
 
-        private void AddImports(ProjectRootElement project, IEnumerable<string> importRelativePaths, IEnumerable<string> modulePaths)
+        private void AddImports(ProjectRootElement project, IEnumerable<string> modulePaths)
         {
-            foreach (ProjectImportElement import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).SelectMany(modulePath => importRelativePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(importRelativePath => project.AddImport(Path.Combine(modulePath, importRelativePath)))))
+            foreach (ProjectImportElement import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(modulePath => project.AddImport(Path.Combine(modulePath, ImportRelativePath))))
             {
                 import.Condition = String.Format("Exists('{0}')", import.Project);
             }

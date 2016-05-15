@@ -46,9 +46,6 @@ namespace CBT.Core.Tasks
         public ITaskHost HostObject { get; set; }
 
         [Required]
-        public string[] ImportRelativePaths { get; set; }
-
-        [Required]
         public string ImportsFile { get; set; }
 
         public string[] Inputs { get; set; }
@@ -108,7 +105,7 @@ namespace CBT.Core.Tasks
 
                     ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(PackagesPath, PackageConfig);
 
-                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, ConfigPath, ImportRelativePaths, BeforeImports, AfterImports))
+                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, ConfigPath, BeforeImports, AfterImports))
                     {
                         return false;
                     }
@@ -129,7 +126,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string configPath, string extensionsPath, string[] importRelativePaths, string importsFile, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
+        public bool Execute(string[] afterImports, string[] beforeImports, string configPath, string extensionsPath, string importsFile, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
         {
             if (Directory.Exists(packagesPath) && IsFileUpToDate(importsFile, inputs))
             {
@@ -140,7 +137,6 @@ namespace CBT.Core.Tasks
             BeforeImports = beforeImports;
             ConfigPath = configPath;
             ExtensionsPath = extensionsPath;
-            ImportRelativePaths = importRelativePaths;
             ImportsFile = importsFile;
             Inputs = inputs;
             PackageConfig = packageConfig;
