@@ -35,18 +35,12 @@ namespace CBT.Core.Tasks
         public IBuildEngine BuildEngine { get; set; }
 
         [Required]
-        public string ConfigPath { get; set; }
-
-        [Required]
         public string ExtensionsPath { get; set; }
 
         /// <summary>
         /// Gets or sets any host object that is associated with the task.
         /// </summary>
         public ITaskHost HostObject { get; set; }
-
-        [Required]
-        public string[] ImportRelativePaths { get; set; }
 
         [Required]
         public string ImportsFile { get; set; }
@@ -58,12 +52,6 @@ namespace CBT.Core.Tasks
 
         [Required]
         public string PackagesPath { get; set; }
-
-        [Required]
-        public string PropertyNamePrefix { get; set; }
-
-        [Required]
-        public string PropertyValuePrefix { get; set; }
 
         public string RestoreCommand { get; set; }
 
@@ -114,7 +102,7 @@ namespace CBT.Core.Tasks
 
                     ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(PackagesPath, PackageConfig);
 
-                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, ConfigPath, PropertyNamePrefix, PropertyValuePrefix, ImportRelativePaths, BeforeImports, AfterImports))
+                    if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, BeforeImports, AfterImports))
                     {
                         return false;
                     }
@@ -135,7 +123,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string configPath, string extensionsPath, string[] importRelativePaths, string importsFile, string[] inputs, string packageConfig, string packagesPath, string propertyNamePrefix, string propertyValuePrefix, string restoreCommand, string restoreCommandArguments)
+        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
         {
             if (Directory.Exists(packagesPath) && IsFileUpToDate(importsFile, inputs))
             {
@@ -144,15 +132,11 @@ namespace CBT.Core.Tasks
 
             AfterImports = afterImports;
             BeforeImports = beforeImports;
-            ConfigPath = configPath;
             ExtensionsPath = extensionsPath;
-            ImportRelativePaths = importRelativePaths;
             ImportsFile = importsFile;
             Inputs = inputs;
             PackageConfig = packageConfig;
             PackagesPath = packagesPath;
-            PropertyNamePrefix = propertyNamePrefix;
-            PropertyValuePrefix = propertyValuePrefix;
             RestoreCommand = restoreCommand;
             RestoreCommandArguments = restoreCommandArguments;
 

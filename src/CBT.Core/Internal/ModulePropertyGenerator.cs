@@ -12,6 +12,10 @@ namespace CBT.Core.Internal
 {
     internal sealed class ModulePropertyGenerator
     {
+        private const string ImportRelativePath = @"CBT\Module\$(MSBuildThisFile)";
+
+        private const string ModuleConfigPath = @"CBT\Module\module.config";
+
         /// <summary>
         /// The name of the 'ID' attribute in the NuGet packages.config.
         /// </summary>
@@ -26,6 +30,10 @@ namespace CBT.Core.Internal
         /// The name of the 'Version' attribute in the NuGet packages.config.
         /// </summary>
         private const string NuGetPackagesConfigVersionAttributeName = "version";
+
+        private const string PropertyNamePrefix = "CBTModule_";
+
+        private const string PropertyValuePrefix = @"$(NuGetPackagesPath)\";
 
         private readonly string[] _packageConfigPaths;
         private readonly IDictionary<string, PackageInfo> _packages;
@@ -54,11 +62,11 @@ namespace CBT.Core.Internal
             _packages = ParsePackages();
         }
 
-        public bool Generate(string outputPath, string extensionsPath, string moduleConfigPath, string propertyNamePrefix, string propertyValuePrefix, string[] importRelativePaths, string[] beforeModuleImports, string[] afterModuleImports)
+        public bool Generate(string outputPath, string extensionsPath, string[] beforeModuleImports, string[] afterModuleImports)
         {
-            ProjectRootElement project = CreateProjectWithNuGetProperties(propertyNamePrefix, propertyValuePrefix);
+            ProjectRootElement project = CreateProjectWithNuGetProperties();
 
-            List<string> properties = project.Properties.Where(i => i.Name.StartsWith(propertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
+            List<string> properties = project.Properties.Where(i => i.Name.StartsWith(PropertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
 
             if (beforeModuleImports != null)
             {
@@ -68,7 +76,7 @@ namespace CBT.Core.Internal
                 }
             }
 
-            AddImports(project, importRelativePaths, properties);
+            AddImports(project, properties);
 
             if (afterModuleImports != null)
             {
@@ -80,11 +88,11 @@ namespace CBT.Core.Internal
 
             project.Save(outputPath);
 
-            Parallel.ForEach(GetModuleExtensions(moduleConfigPath), i =>
+            Parallel.ForEach(GetModuleExtensions(), i =>
             {
                 ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Key.Trim()));
 
-                AddImports(extensionProject, importRelativePaths, properties);
+                AddImports(extensionProject, properties);
 
                 extensionProject.Save();
             });
@@ -92,15 +100,15 @@ namespace CBT.Core.Internal
             return true;
         }
 
-        private void AddImports(ProjectRootElement project, IEnumerable<string> importRelativePaths, IEnumerable<string> modulePaths)
+        private void AddImports(ProjectRootElement project, IEnumerable<string> modulePaths)
         {
-            foreach (ProjectImportElement import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).SelectMany(modulePath => importRelativePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(importRelativePath => project.AddImport(Path.Combine(modulePath, importRelativePath)))))
+            foreach (ProjectImportElement import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(modulePath => project.AddImport(Path.Combine(modulePath, ImportRelativePath))))
             {
                 import.Condition = String.Format("Exists('{0}')", import.Project);
             }
         }
 
-        private ProjectRootElement CreateProjectWithNuGetProperties(string propertyNamePrefix, string propertyValuePrefix)
+        private ProjectRootElement CreateProjectWithNuGetProperties()
         {
             ProjectRootElement project = ProjectRootElement.Create();
 
@@ -112,8 +120,8 @@ namespace CBT.Core.Internal
             {
                 // Generate the property name and value once
                 //
-                string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", propertyNamePrefix, item.Id.Replace(".", "_"));
-                string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", propertyValuePrefix, item.Id, item.VersionString);
+                string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", PropertyNamePrefix, item.Id.Replace(".", "_"));
+                string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", PropertyValuePrefix, item.Id, item.VersionString);
 
                 propertyGroup.SetProperty(propertyName, propertyValue);
             }
@@ -121,13 +129,13 @@ namespace CBT.Core.Internal
             return project;
         }
 
-        private IDictionary<string, string> GetModuleExtensions(string moduleConfigPath)
+        private IDictionary<string, string> GetModuleExtensions()
         {
             ConcurrentDictionary<string, string> extensionImports = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             Parallel.ForEach(_packages.Values, packageInfo =>
             {
-                string path = Path.Combine(packageInfo.Path, moduleConfigPath);
+                string path = Path.Combine(packageInfo.Path, ModuleConfigPath);
 
                 if (File.Exists(path))
                 {
