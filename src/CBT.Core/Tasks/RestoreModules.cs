@@ -4,7 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,8 +12,6 @@ namespace CBT.Core.Tasks
 {
     public sealed class RestoreModules : ICancelableTask, IDisposable
     {
-        private const string NuGetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe";
-
         private static readonly TimeSpan RestoreTimeout = TimeSpan.FromMinutes(30);
 
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
@@ -24,6 +22,8 @@ namespace CBT.Core.Tasks
         {
             _log = new CBTTaskLogHelper(this);
         }
+
+        private delegate Task<bool> NuGetDownloader(string path, IBuildEngine buildEngine, CancellationToken cancellationToken);
 
         public string[] AfterImports { get; set; }
 
@@ -46,6 +46,10 @@ namespace CBT.Core.Tasks
         public string ImportsFile { get; set; }
 
         public string[] Inputs { get; set; }
+
+        public string NuGetDownloaderAssemblyPath { get; set; }
+
+        public string NuGetDownloaderClassName { get; set; }
 
         [Required]
         public string PackageConfig { get; set; }
@@ -123,7 +127,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
+        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
         {
             if (Directory.Exists(packagesPath) && IsFileUpToDate(importsFile, inputs))
             {
@@ -135,6 +139,8 @@ namespace CBT.Core.Tasks
             ExtensionsPath = extensionsPath;
             ImportsFile = importsFile;
             Inputs = inputs;
+            NuGetDownloaderAssemblyPath = nuGetDownloaderAssemblyPath;
+            NuGetDownloaderClassName = nuGetDownloaderClassName;
             PackageConfig = packageConfig;
             PackagesPath = packagesPath;
             RestoreCommand = restoreCommand;
@@ -181,10 +187,15 @@ namespace CBT.Core.Tasks
 
         private async Task<bool> DownloadNuGet()
         {
-            _log.LogMessage("Downloading NuGet.");
-
             try
             {
+                if (String.IsNullOrWhiteSpace(NuGetDownloaderAssemblyPath) || String.IsNullOrWhiteSpace(NuGetDownloaderClassName))
+                {
+                    throw new ArgumentException("NuGetDownloaderAssemblyPath and NuGetDownloaderClassName must be specified to download NuGet");
+                }
+
+                _log.LogMessage("Preparing to download NuGet");
+
                 string directory = Path.GetDirectoryName(RestoreCommand);
 
                 if (!String.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
@@ -192,24 +203,22 @@ namespace CBT.Core.Tasks
                     Directory.CreateDirectory(directory);
                 }
 
-                var downloadTask = Task.Run(() =>
+                Assembly assembly = Assembly.LoadFrom(NuGetDownloaderAssemblyPath);
+
+                Type type = assembly.GetType(NuGetDownloaderClassName, throwOnError: true);
+
+                NuGetDownloader nuGetDownloader = Delegate.CreateDelegate(typeof(NuGetDownloader), type, "ExecuteAsync", ignoreCase: true, throwOnBindFailure: false) as NuGetDownloader;
+
+                if (nuGetDownloader == null)
                 {
-                    using (WebClient webClient = new WebClient())
-                    {
-                        webClient.DownloadFile(new Uri(NuGetUrl), RestoreCommand);
-                    }
-                }, _cancellationTokenSource.Token);
-
-                var timeoutTask = Task.Delay(TimeSpan.FromMinutes(2), _cancellationTokenSource.Token);
-
-                var completedTask = await Task.WhenAny(downloadTask, timeoutTask).ConfigureAwait(continueOnCapturedContext: false);
-
-                if (completedTask == downloadTask)
-                {
-                    return true;
+                    throw new ArgumentException(String.Format("Specified static method \"{0}.ExecuteAsync\" does not match required signature 'Task<bool> ExecuteAsync(string, IBuildEngine, CancellationToken)'", NuGetDownloaderClassName));
                 }
 
-                _log.LogError("Timed out downloading NuGet from '{0}'", NuGetUrl);
+                return await nuGetDownloader(directory, BuildEngine, _cancellationTokenSource.Token);
+            }
+            catch (TimeoutException e)
+            {
+                _log.LogError(e.Message);
             }
             catch (TaskCanceledException)
             {
@@ -217,29 +226,10 @@ namespace CBT.Core.Tasks
             }
             catch (Exception e)
             {
-                _log.LogError(e.ToString());
+                _log.LogError("Cannot download NuGet.  {0}", e.Message);
+                _log.LogMessage(MessageImportance.Low, e.ToString());
             }
 
-            if (File.Exists(RestoreCommand))
-            {
-                // Delete any file that was partially downloaded when canceling
-                //
-                for (int i = 0; i < 10; i++)
-                {
-                    try
-                    {
-                        File.Delete(RestoreCommand);
-                        break;
-                    }
-                    catch (Exception)
-                    {
-                        // Ignored because in some cases the file is in use still
-                        //
-                    }
-
-                    Thread.Sleep(TimeSpan.FromMilliseconds(200));
-                }
-            }
             return false;
         }
 
