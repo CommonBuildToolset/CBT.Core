@@ -261,81 +261,79 @@ namespace CBT.Core.Tasks
         private bool RestorePackages()
         {
             using (ManualResetEvent processExited = new ManualResetEvent(false))
+            using (Process process = new Process
             {
-                using (Process process = new Process
+                EnableRaisingEvents = true,
+                StartInfo = new ProcessStartInfo
                 {
-                    EnableRaisingEvents = true,
-                    StartInfo = new ProcessStartInfo
-                    {
-                        Arguments = RestoreCommandArguments,
-                        CreateNoWindow = true,
-                        FileName = RestoreCommand,
-                        UseShellExecute = false,
-                        RedirectStandardError = true,
-                        RedirectStandardInput = true,
-                        RedirectStandardOutput = true,
-                        WorkingDirectory = Environment.CurrentDirectory,
-                    },
-                })
+                    Arguments = RestoreCommandArguments,
+                    CreateNoWindow = true,
+                    FileName = RestoreCommand,
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    WorkingDirectory = Environment.CurrentDirectory,
+                },
+            })
+            {
+                process.ErrorDataReceived += (sender, args) =>
                 {
-                    process.ErrorDataReceived += (sender, args) =>
+                    if (args != null && !String.IsNullOrWhiteSpace(args.Data))
                     {
-                        if (args != null && !String.IsNullOrWhiteSpace(args.Data))
-                        {
-                            _log.LogError(args.Data);
-                        }
-                    };
+                        _log.LogError(args.Data);
+                    }
+                };
 
-                    process.OutputDataReceived += (sender, args) =>
+                process.OutputDataReceived += (sender, args) =>
+                {
+                    if (args != null && !String.IsNullOrWhiteSpace(args.Data))
                     {
-                        if (args != null && !String.IsNullOrWhiteSpace(args.Data))
-                        {
-                            _log.LogMessage(args.Data);
-                        }
-                    };
+                        _log.LogMessage(args.Data);
+                    }
+                };
 
-                    process.Exited += (sender, args) => processExited.Set();
+                process.Exited += (sender, args) => processExited.Set();
 
-                    _log.LogMessage(MessageImportance.Low, "{0} {1}", process.StartInfo.FileName, process.StartInfo.Arguments);
+                _log.LogMessage(MessageImportance.Low, "{0} {1}", process.StartInfo.FileName, process.StartInfo.Arguments);
 
-                    if (!process.Start())
+                if (!process.Start())
+                {
+                    throw new Exception(String.Format("Failed to start process \"{0} {1}\"", process.StartInfo.FileName, process.StartInfo.Arguments));
+                }
+
+                process.StandardInput.Close();
+
+                process.BeginErrorReadLine();
+                process.BeginOutputReadLine();
+
+                int eventIndex = WaitHandle.WaitAny(new[] { processExited, _cancellationTokenSource.Token.WaitHandle }, RestoreTimeout);
+
+                if (eventIndex == 0)
+                {
+                    if (process.ExitCode != 0)
                     {
-                        throw new Exception(String.Format("Failed to start process \"{0} {1}\"", process.StartInfo.FileName, process.StartInfo.Arguments));
+                        throw new Exception(String.Format("Restoring CBT modules failed with an exit code of '{0}'.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.", process.ExitCode));
                     }
 
-                    process.StandardInput.Close();
+                    return true;
+                }
 
-                    process.BeginErrorReadLine();
-                    process.BeginOutputReadLine();
-
-                    int eventIndex = WaitHandle.WaitAny(new[] { processExited, _cancellationTokenSource.Token.WaitHandle }, RestoreTimeout);
-
-                    if (eventIndex == 0)
+                if (!process.HasExited)
+                {
+                    try
                     {
-                        if (process.ExitCode != 0)
-                        {
-                            throw new Exception(String.Format("Restoring CBT modules failed with an exit code of '{0}'.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.", process.ExitCode));
-                        }
-
-                        return true;
+                        process.Kill();
                     }
-
-                    if (!process.HasExited)
+                    catch (Exception e)
                     {
-                        try
-                        {
-                            process.Kill();
-                        }
-                        catch (Exception e)
-                        {
-                            _log.LogMessage("Exception occurred while ending process: {0}", e.Message);
-                        }
+                        _log.LogMessage("Exception occurred while ending process: {0}", e.Message);
                     }
+                }
 
-                    if (eventIndex == WaitHandle.WaitTimeout)
-                    {
-                        throw new Exception("Timed out waiting for the CBT module restore command to complete.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.");
-                    }
+                if (eventIndex == WaitHandle.WaitTimeout)
+                {
+                    throw new Exception("Timed out waiting for the CBT module restore command to complete.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.");
                 }
             }
 
