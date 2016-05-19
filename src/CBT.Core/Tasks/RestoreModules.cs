@@ -307,7 +307,7 @@ namespace CBT.Core.Tasks
                 process.BeginErrorReadLine();
                 process.BeginOutputReadLine();
 
-                int eventIndex = WaitHandle.WaitAny(new[] { processExited, _cancellationTokenSource.Token.WaitHandle }, RestoreTimeout);
+                int eventIndex = WaitHandle.WaitAny(new[] {processExited, _cancellationTokenSource.Token.WaitHandle}, RestoreTimeout);
 
                 if (eventIndex == 0)
                 {
