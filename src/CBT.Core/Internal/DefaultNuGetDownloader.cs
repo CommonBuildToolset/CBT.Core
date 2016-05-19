@@ -12,9 +12,9 @@ namespace CBT.Core.Internal
     /// </summary>
     internal static class DefaultNuGetDownloader
     {
-        private const string NuGetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe";
+        private static readonly Uri NuGetUrl = new Uri("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe");
 
-        public static async Task<bool> ExecuteAsync(string path, IBuildEngine buildEngine, CancellationToken cancellationToken)
+        public static bool Execute(string path, IBuildEngine buildEngine, CancellationToken cancellationToken)
         {
             if (String.IsNullOrEmpty(path))
             {
@@ -33,49 +33,41 @@ namespace CBT.Core.Internal
 
             LogMessage(buildEngine, "Downloading NuGet from '{0}'", NuGetUrl);
 
-            string filePath = Path.Combine(path, Path.GetFileName(NuGetUrl));
+            string filePath = Path.Combine(path, Path.GetFileName(NuGetUrl.LocalPath));
 
-            try
+            using (WebClient webClient = new WebClient())
             {
-                Task downloadTask = Task.Run(() =>
+                try
                 {
-                    using (WebClient webClient = new WebClient())
-                    {
-                        webClient.DownloadFile(new Uri(NuGetUrl), filePath);
-                    }
-                }, cancellationToken);
-
-                Task timeoutTask = Task.Delay(TimeSpan.FromMinutes(2), cancellationToken);
-
-                Task completedTask = await Task.WhenAny(downloadTask, timeoutTask).ConfigureAwait(continueOnCapturedContext: false);
-
-                if (completedTask == timeoutTask)
-                {
-                    throw new TimeoutException(String.Format("Timed out downloading NuGet from '{0}'", NuGetUrl));
+                    webClient.DownloadFileTaskAsync(NuGetUrl, filePath).Wait(cancellationToken);
+                    
+                    return true;
                 }
-
-                return true;
-            }
-            catch (Exception)
-            {
-                if (File.Exists(filePath))
+                catch (Exception)
                 {
-                    // Delete any file that was partially downloaded when canceling
-                    //
-                    for (int i = 0; i < 10; i++)
-                    {
-                        try
-                        {
-                            File.Delete(filePath);
-                            break;
-                        }
-                        catch (Exception)
-                        {
-                            // Ignored because in some cases the file is in use still
-                            //
-                        }
+                    
+                    webClient.CancelAsync();
 
-                        Thread.Sleep(TimeSpan.FromMilliseconds(200));
+                    if (File.Exists(filePath))
+                    {
+                        // Delete any file that was partially downloaded when canceling
+                        //
+                        for (int i = 0; i < 10; i++)
+                        {
+                            try
+                            {
+                                File.Delete(filePath);
+                                break;
+                            }
+                            catch (Exception)
+                            {
+                                // Ignored because in some cases the file is in use still
+                                //
+                            }
+
+                            // ReSharper disable once MethodSupportsCancellation
+                            Thread.Sleep(TimeSpan.FromMilliseconds(200));
+                        }
                     }
                 }
             }
