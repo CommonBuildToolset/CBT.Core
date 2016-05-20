@@ -12,9 +12,13 @@ namespace CBT.Core.Internal
 {
     internal sealed class ModulePropertyGenerator
     {
-        private const string ImportRelativePath = @"CBT\Module\$(MSBuildThisFile)";
+        internal const string ImportRelativePath = @"CBT\Module\$(MSBuildThisFile)";
 
-        private const string ModuleConfigPath = @"CBT\Module\module.config";
+        internal const string ModuleConfigPath = @"CBT\Module\module.config";
+
+        internal const string PropertyNamePrefix = "CBTModule_";
+
+        internal const string PropertyValuePrefix = @"$(NuGetPackagesPath)\";
 
         /// <summary>
         /// The name of the 'ID' attribute in the NuGet packages.config.
@@ -30,10 +34,6 @@ namespace CBT.Core.Internal
         /// The name of the 'Version' attribute in the NuGet packages.config.
         /// </summary>
         private const string NuGetPackagesConfigVersionAttributeName = "version";
-
-        private const string PropertyNamePrefix = "CBTModule_";
-
-        private const string PropertyValuePrefix = @"$(NuGetPackagesPath)\";
 
         private readonly string[] _packageConfigPaths;
         private readonly IDictionary<string, PackageInfo> _packages;
