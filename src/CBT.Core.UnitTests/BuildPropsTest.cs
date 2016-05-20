@@ -99,6 +99,8 @@ namespace CBT.Core.UnitTests
                 {"BeforeImports", "$(CBTModuleImportsBefore.Split(';'))"},
                 {"ExtensionsPath", "$(CBTModuleExtensionsPath)"},
                 {"ImportsFile", "$(CBTModulePropertiesFile)"},
+                {"NuGetDownloaderAssemblyPath", "$(CBTNuGetDownloaderAssemblyPath)" },
+                {"NuGetDownloaderClassName", "$(CBTNuGetDownloaderClassName)" },
                 {"PackageConfig", "$(CBTModulePackageConfigPath)"},
                 {"PackagesPath", "$(NuGetPackagesPath)"},
                 {"RestoreCommand", "$(CBTModuleRestoreCommand)"},

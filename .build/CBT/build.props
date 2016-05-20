@@ -49,12 +49,15 @@
     <CBTModuleImportsBefore Condition=" '$(CBTModuleImportsBefore)' == '' ">%24(CBTLocalBuildExtensionsPath)\%24(MSBuildThisFile)</CBTModuleImportsBefore>
     <CBTModuleImportsAfter Condition=" '$(CBTModuleImportsAfter)' == '' "></CBTModuleImportsAfter>
 
+    <CBTNuGetBinDir Condition=" '$(CBTCBTNuGetBinDir)' == '' ">$(CBTIntermediateOutputPath)\NuGet</CBTNuGetBinDir>
+    <CBTNuGetDownloaderAssemblyPath Condition=" '$(CBTNuGetDownloaderAssemblyPath)' == '' ">$(CBTCoreAssemblyPath)</CBTNuGetDownloaderAssemblyPath>
+    <CBTNuGetDownloaderClassName Condition=" '$(CBTNuGetDownloaderClassName)' == '' ">CBT.Core.Internal.DefaultNuGetDownloader</CBTNuGetDownloaderClassName>
     <CBTModuleRestoreTaskName Condition=" '$(CBTModuleRestoreTaskName)' == '' ">CBT.Core.Tasks.RestoreModules</CBTModuleRestoreTaskName>
-    <CBTModuleRestoreCommand Condition=" '$(CBTModuleRestoreCommand)' == '' ">$(CBTIntermediateOutputPath)\NuGet.exe</CBTModuleRestoreCommand>
+    <CBTModuleRestoreCommand Condition=" '$(CBTModuleRestoreCommand)' == '' ">$(CBTNuGetBinDir)\NuGet.exe</CBTModuleRestoreCommand>
     <CBTModuleRestoreCommandArguments Condition=" '$(CBTModuleRestoreCommandArguments)' == '' ">restore &quot;$(CBTModulePackageConfigPath)&quot; -OutputDirectory &quot;$(NuGetPackagesPath)&quot; -ConfigFile &quot;$(NuGetConfigPath)&quot; -MSBuildVersion &quot;$(MSBuildToolsVersion)&quot; -NonInteractive</CBTModuleRestoreCommandArguments>
     <CBTModuleRestoreInputs Condition=" '$(CBTModuleRestoreInputs)' == '' ">$(MSBuildThisFileFullPath);$(CBTCoreAssemblyPath);$(CBTModulePackageConfigPath)</CBTModuleRestoreInputs>
 
-    <CBTModulesRestored Condition=" '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments)))</CBTModulesRestored>
+    <CBTModulesRestored Condition=" '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments)))</CBTModulesRestored>
 
   </PropertyGroup>
 
@@ -72,6 +75,8 @@
       BeforeImports="$(CBTModuleImportsBefore.Split(';'))"
       ExtensionsPath="$(CBTModuleExtensionsPath)"
       ImportsFile="$(CBTModulePropertiesFile)"
+      NuGetDownloaderAssemblyPath="$(CBTNuGetDownloaderAssemblyPath)"
+      NuGetDownloaderClassName="$(CBTNuGetDownloaderClassName)"
       PackageConfig="$(CBTModulePackageConfigPath)"
       PackagesPath="$(NuGetPackagesPath)"
       RestoreCommand="$(CBTModuleRestoreCommand)"

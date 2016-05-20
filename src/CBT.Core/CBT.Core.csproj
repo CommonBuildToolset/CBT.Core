@@ -21,6 +21,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Internal\DefaultNuGetDownloader.cs" />
     <Compile Include="Internal\CBTTaskLogHelper.cs" />
     <Compile Include="Internal\CBTBuildEngine.cs" />
     <Compile Include="Internal\ModulePropertyGenerator.cs" />
