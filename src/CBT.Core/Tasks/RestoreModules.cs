@@ -231,7 +231,7 @@ namespace CBT.Core.Tasks
 
                 Task timeoutTask = Task.Delay(NuGetDownloadTimeout, _cancellationTokenSource.Token);
 
-                Task completedTask = await Task.WhenAny(downloadTask, timeoutTask);
+                Task completedTask = await Task.WhenAny(downloadTask, timeoutTask).ConfigureAwait(continueOnCapturedContext: false);
 
                 if (completedTask == downloadTask)
                 {
@@ -257,7 +257,7 @@ namespace CBT.Core.Tasks
                     _log.LogError("Timed out downloading NuGet.");
                 }
 
-                await downloadTask;
+                await downloadTask.ConfigureAwait(continueOnCapturedContext: false);
 
                 return false;
             }
