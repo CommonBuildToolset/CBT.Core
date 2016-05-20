@@ -35,6 +35,9 @@ namespace CBT.Core.UnitTests
                 {"CBTModuleExtensionsPath", null},
                 {"CBTModuleImportsBefore", null},
                 {"CBTModuleImportsAfter", null},
+                {"CBTNuGetBinDir", null },
+                {"CBTNuGetDownloaderAssemblyPath",  null},
+                {"CBTNuGetDownloaderClassName", null },
                 {"CBTModuleRestoreTaskName", null},
                 {"CBTModuleRestoreCommand", null},
                 {"CBTModuleRestoreCommandArguments", null},
@@ -53,6 +56,9 @@ namespace CBT.Core.UnitTests
 
             PropertyShouldBe("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)");
             PropertyShouldBe("EnlistmentRoot", @"$(EnlistmentRoot.TrimEnd('\\'))");
+            PropertyShouldBe("CBTNuGetBinDir", @"$(CBTIntermediateOutputPath)\NuGet");
+            PropertyShouldBe("CBTNuGetDownloaderAssemblyPath", "$(CBTCoreAssemblyPath)");
+            PropertyShouldBe("CBTNuGetDownloaderClassName", "CBT.Core.Internal.DefaultNuGetDownloader");
 
             var globalPathProperty = _project.Properties.Where(i => i.Name.Equals("CBTGlobalPath")).ToList();
             globalPathProperty.Count.ShouldBe(2);
