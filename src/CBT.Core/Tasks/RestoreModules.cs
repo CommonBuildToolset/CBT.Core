@@ -29,10 +29,11 @@ namespace CBT.Core.Tasks
         /// Represents the method signature of a NuGet downloader.
         /// </summary>
         /// <param name="path">The directory path of where to download NuGet.exe to.</param>
+        /// <param name="arguments">Optional arguments to pass to the downloader.</param>
         /// <param name="buildEngine">An <see cref="IBuildEngine"/> instance to use for logging.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> to use for receiving cancellation notifications.</param>
         /// <returns><code>true</code> if NuGet was successfully downloaded, otherwise <code>false</code>.</returns>
-        private delegate bool NuGetDownloader(string path, IBuildEngine buildEngine, CancellationToken cancellationToken);
+        private delegate bool NuGetDownloader(string path, string arguments, IBuildEngine buildEngine, CancellationToken cancellationToken);
 
         public string[] AfterImports { get; set; }
 
@@ -59,6 +60,8 @@ namespace CBT.Core.Tasks
         public string NuGetDownloaderAssemblyPath { get; set; }
 
         public string NuGetDownloaderClassName { get; set; }
+
+        public string NuGetDownloaderArguments { get; set; }
 
         [Required]
         public string PackageConfig { get; set; }
@@ -136,7 +139,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
+        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
         {
             if (Directory.Exists(packagesPath) && IsFileUpToDate(importsFile, inputs))
             {
@@ -150,6 +153,7 @@ namespace CBT.Core.Tasks
             Inputs = inputs;
             NuGetDownloaderAssemblyPath = nuGetDownloaderAssemblyPath;
             NuGetDownloaderClassName = nuGetDownloaderClassName;
+            NuGetDownloaderArguments = nuGetDownloaderArguments;
             PackageConfig = packageConfig;
             PackagesPath = packagesPath;
             RestoreCommand = restoreCommand;
@@ -223,7 +227,7 @@ namespace CBT.Core.Tasks
                     throw new ArgumentException(String.Format("Specified static method \"{0}.Execute\" does not match required signature 'bool Execute(string, IBuildEngine, CancellationToken)'", NuGetDownloaderClassName));
                 }
 
-                Task downloadTask = Task.Run(() => nuGetDownloader(directory, BuildEngine, _cancellationTokenSource.Token), _cancellationTokenSource.Token);
+                Task downloadTask = Task.Run(() => nuGetDownloader(directory, NuGetDownloaderArguments, BuildEngine, _cancellationTokenSource.Token), _cancellationTokenSource.Token);
 
                 Task timeoutTask = Task.Delay(NuGetDownloadTimeout, _cancellationTokenSource.Token);
 
@@ -231,7 +235,19 @@ namespace CBT.Core.Tasks
 
                 if (completedTask == downloadTask)
                 {
-                    return true;
+                    if (downloadTask.IsFaulted && downloadTask.Exception != null)
+                    {
+                        throw downloadTask.Exception;
+                    }
+
+                    if (File.Exists(RestoreCommand))
+                    {
+                        return true;
+                    }
+
+                    _log.LogError("The NuGet downloader succeeded but did the path '{0}' does not exist or is inaccessible.", RestoreCommand);
+
+                    return false;
                 }
 
                 if (!_cancellationTokenSource.IsCancellationRequested)
@@ -251,6 +267,11 @@ namespace CBT.Core.Tasks
             }
             catch (Exception e)
             {
+                if (e is AggregateException)
+                {
+                    e = ((AggregateException) e).Flatten().InnerExceptions.Last();
+                }
+
                 _log.LogError("Cannot download NuGet.  {0}", e.Message);
                 _log.LogMessage(MessageImportance.Low, e.ToString());
             }

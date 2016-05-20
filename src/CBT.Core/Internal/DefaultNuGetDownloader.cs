@@ -12,9 +12,9 @@ namespace CBT.Core.Internal
     /// </summary>
     internal static class DefaultNuGetDownloader
     {
-        private static readonly Uri NuGetUrl = new Uri("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe");
+        private static readonly Uri DefaultNuGetUrl = new Uri("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe");
 
-        public static bool Execute(string path, IBuildEngine buildEngine, CancellationToken cancellationToken)
+        public static bool Execute(string path, string arguments, IBuildEngine buildEngine, CancellationToken cancellationToken)
         {
             if (String.IsNullOrEmpty(path))
             {
@@ -31,15 +31,31 @@ namespace CBT.Core.Internal
                 throw new ArgumentNullException("cancellationToken");
             }
 
-            LogMessage(buildEngine, "Downloading NuGet from '{0}'", NuGetUrl);
+            Uri downloadUri = DefaultNuGetUrl;
 
-            string filePath = Path.Combine(path, Path.GetFileName(NuGetUrl.LocalPath));
+            // Attempt to parse the arguments as a URL to NuGet.exe
+            //
+            if (!String.IsNullOrWhiteSpace(arguments))
+            {
+                Uri uri;
+
+                if (!Uri.TryCreate(arguments, UriKind.Absolute, out uri) || !Path.GetFileName(uri.LocalPath).Equals("nuget.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new ArgumentException(String.Format("The specified NuGet downloader arguments '{0}' are invalid.  The value must be a valid URL that points to NuGet.exe.", arguments));
+                }
+
+                downloadUri = uri;
+            }
+
+            LogMessage(buildEngine, "Downloading NuGet from '{0}'", downloadUri);
+
+            string filePath = Path.Combine(path, Path.GetFileName(downloadUri.LocalPath));
 
             using (WebClient webClient = new WebClient())
             {
                 try
                 {
-                    webClient.DownloadFileTaskAsync(NuGetUrl, filePath).Wait(cancellationToken);
+                    webClient.DownloadFileTaskAsync(downloadUri, filePath).Wait(cancellationToken);
                     
                     return true;
                 }
