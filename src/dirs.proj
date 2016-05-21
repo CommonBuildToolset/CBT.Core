@@ -7,5 +7,5 @@
     <ProjectFile Include="**\*.csproj" />
   </ItemGroup>
 
-  <Import Project="$(TraversalTargets)" />
+  <Import Project="$(TraversalTargets)" Condition=" '$(CBTModulesRestored)' == 'true' " />
 </Project>

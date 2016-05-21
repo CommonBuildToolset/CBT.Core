@@ -66,9 +66,18 @@
   <UsingTask TaskName="RestoreModules" AssemblyFile="$(CBTCoreAssemblyPath)" />
 
   <Target Name="RestoreCBTModules"
-      Condition=" '$(CBTModulesRestored)' == '' "
+      Condition=" '$(CBTModulesRestored)' != 'true' "
       Inputs="$(CBTModuleRestoreInputs)"
       Outputs="$(CBTModulePropertiesFile)">
+    
+    <!-- TODO: What should this error message say?  The user would have already received this error (but the build continues and then this stops the build):
+
+    MSBUILD : error : Restoring CBT modules failed with an exit code of '1'.  More information about the problem including the output of the restoration command is
+    available when the log verbosity is set to Detailed.
+    
+    Is there a task that just stops the build?
+    -->
+    <Error Condition=" '$(CBTModulesRestored)' == 'false' " Text="Failed to restore modules" />
 
     <RestoreModules
       AfterImports="$(CBTModuleImportsAfter.Split(';'))"
