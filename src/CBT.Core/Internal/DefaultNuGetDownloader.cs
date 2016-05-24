@@ -1,9 +1,7 @@
-﻿using Microsoft.Build.Framework;
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace CBT.Core.Internal
 {
@@ -14,16 +12,11 @@ namespace CBT.Core.Internal
     {
         private static readonly Uri DefaultNuGetUrl = new Uri("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe");
 
-        public static bool Execute(string path, string arguments, IBuildEngine buildEngine, CancellationToken cancellationToken)
+        public static bool Execute(string path, string arguments, Action<string> logInfo, Action<string> logError, CancellationToken cancellationToken)
         {
             if (String.IsNullOrEmpty(path))
             {
                 throw new ArgumentNullException("path");
-            }
-
-            if (buildEngine == null)
-            {
-                throw new ArgumentNullException("buildEngine");
             }
 
             if (cancellationToken == null)
@@ -47,8 +40,8 @@ namespace CBT.Core.Internal
                 downloadUri = uri;
             }
 
-            LogMessage(buildEngine, "Downloading NuGet from '{0}'", downloadUri);
-
+            logInfo(String.Format("Downloading NuGet from '{0}'", downloadUri));
+            
             string filePath = Path.Combine(path, Path.GetFileName(downloadUri.LocalPath));
 
             using (WebClient webClient = new WebClient())
@@ -89,11 +82,6 @@ namespace CBT.Core.Internal
             }
 
             return false;
-        }
-
-        private static void LogMessage(IBuildEngine buildEngine, string format, params object[] args)
-        {
-            buildEngine.LogMessageEvent(new BuildMessageEventArgs(format, null, "DownloadNuGet", MessageImportance.Normal, DateTime.UtcNow, args));
         }
     }
 }
