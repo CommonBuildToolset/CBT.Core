@@ -33,7 +33,7 @@ namespace CBT.Core.Tasks
         /// <param name="buildEngine">An <see cref="IBuildEngine"/> instance to use for logging.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> to use for receiving cancellation notifications.</param>
         /// <returns><code>true</code> if NuGet was successfully downloaded, otherwise <code>false</code>.</returns>
-        private delegate bool NuGetDownloader(string path, string arguments, IBuildEngine buildEngine, CancellationToken cancellationToken);
+        private delegate bool NuGetDownloader(string path, string arguments, Action<string> logInfo, Action<string> logError, CancellationToken cancellationToken);
 
         public string[] AfterImports { get; set; }
 
@@ -220,14 +220,18 @@ namespace CBT.Core.Tasks
 
                 Type type = assembly.GetType(NuGetDownloaderClassName, throwOnError: true);
 
-                NuGetDownloader nuGetDownloader = Delegate.CreateDelegate(typeof (NuGetDownloader), type, "Execute", ignoreCase: true, throwOnBindFailure: false) as NuGetDownloader;
-
-                if (nuGetDownloader == null)
+                NuGetDownloader nuGetDownloader;
+                try
                 {
-                    throw new ArgumentException(String.Format("Specified static method \"{0}.Execute\" does not match required signature 'bool Execute(string, IBuildEngine, CancellationToken)'", NuGetDownloaderClassName));
+                    nuGetDownloader = Delegate.CreateDelegate(typeof (NuGetDownloader), type, "Execute", ignoreCase: true, throwOnBindFailure: true) as NuGetDownloader;
+                }
+                catch (ArgumentException e)
+                {
+                    throw new ArgumentException(String.Format("Specified static method \"{0}.Execute\" does not match required signature 'bool Execute(string, string, Action<string>, Action<string>, CancellationToken)'", NuGetDownloaderClassName), e);
                 }
 
-                Task downloadTask = Task.Run(() => nuGetDownloader(directory, NuGetDownloaderArguments, BuildEngine, _cancellationTokenSource.Token), _cancellationTokenSource.Token);
+                // ReSharper disable once PossibleNullReferenceException
+                Task downloadTask = Task.Run(() => nuGetDownloader(directory, NuGetDownloaderArguments, message => _log.LogMessage(message), message => _log.LogError(message), _cancellationTokenSource.Token), _cancellationTokenSource.Token);
 
                 Task timeoutTask = Task.Delay(NuGetDownloadTimeout, _cancellationTokenSource.Token);
 
