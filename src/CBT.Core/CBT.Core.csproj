@@ -29,8 +29,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tasks\RestoreModules.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="$(CBTGlobalPath)\build.props">
+      <Link>build.props</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="AfterBuild">
-    <Message Text=" Optimize = $(Optimize)" />
-  </Target>
 </Project>
