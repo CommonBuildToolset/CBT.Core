@@ -89,7 +89,7 @@ namespace CBT.Core.UnitTests
 
             target.ShouldNotBe(null);
 
-            target.Condition.ShouldBe(" '$(CBTModulesRestored)' == '' ");
+            target.Condition.ShouldBe(" '$(CBTModulesRestored)' != 'true' ");
 
             target.Inputs.ShouldBe("$(CBTModuleRestoreInputs)");
 

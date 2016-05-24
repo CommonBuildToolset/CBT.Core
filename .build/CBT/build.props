@@ -66,9 +66,11 @@
   <UsingTask TaskName="RestoreModules" AssemblyFile="$(CBTCoreAssemblyPath)" />
 
   <Target Name="RestoreCBTModules"
-      Condition=" '$(CBTModulesRestored)' == '' "
+      Condition=" '$(CBTModulesRestored)' != 'true' "
       Inputs="$(CBTModuleRestoreInputs)"
       Outputs="$(CBTModulePropertiesFile)">
+    
+    <Error Condition=" '$(CBTModulesRestored)' == 'false' " Text="Modules were not restored and the build cannot continue.  Refer to other errors for more information." />
 
     <RestoreModules
       AfterImports="$(CBTModuleImportsAfter.Split(';'))"
