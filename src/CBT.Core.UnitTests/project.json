@@ -1,0 +1,16 @@
+﻿{
+  "dependencies": {
+    "NUnit": {
+      "version": "2.6.4",
+      "suppressParent": "none"
+    },
+    "NUnitTestAdapter": "2.0.0",
+    "Shouldly": "2.6.0"
+  },
+  "frameworks": {
+    "net45": {}
+  },
+  "runtimes": {
+    "win": {}
+  }
+}
