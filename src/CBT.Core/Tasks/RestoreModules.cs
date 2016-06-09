@@ -86,19 +86,23 @@ namespace CBT.Core.Tasks
 
         public bool Execute()
         {
-            // Get a mutex name based on the output file
+            // Get a semaphore name based on the output file
             //
-            string mutexName = ImportsFile.GetHashCode().ToString("X");
+            string semaphoreName = ImportsFile.ToUpper().GetHashCode().ToString("X");
 
-            using (var mutex = new Mutex(false, mutexName))
+            bool releaseSemaphore;
+
+            using (Semaphore semaphore = new Semaphore(0, 1, semaphoreName, out releaseSemaphore))
             {
-                if (!mutex.WaitOne(TimeSpan.FromMinutes(30)))
-                {
-                    return false;
-                }
-
                 try
                 {
+                    if (!releaseSemaphore)
+                    {
+                        releaseSemaphore = semaphore.WaitOne(TimeSpan.FromMinutes(30));
+
+                        return releaseSemaphore;
+                    }
+
                     _log.LogMessage(MessageImportance.High, "Restore CBT modules:");
 
                     if (!File.Exists(RestoreCommand))
@@ -132,7 +136,10 @@ namespace CBT.Core.Tasks
                 }
                 finally
                 {
-                    mutex.ReleaseMutex();
+                    if (releaseSemaphore)
+                    {
+                        semaphore.Release();
+                    }
                 }
             }
 
