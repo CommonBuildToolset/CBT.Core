@@ -30,7 +30,6 @@ namespace CBT.Core.Tasks
         /// </summary>
         /// <param name="path">The directory path of where to download NuGet.exe to.</param>
         /// <param name="arguments">Optional arguments to pass to the downloader.</param>
-        /// <param name="buildEngine">An <see cref="IBuildEngine"/> instance to use for logging.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> to use for receiving cancellation notifications.</param>
         /// <returns><code>true</code> if NuGet was successfully downloaded, otherwise <code>false</code>.</returns>
         private delegate bool NuGetDownloader(string path, string arguments, Action<string> logInfo, Action<string> logError, CancellationToken cancellationToken);
@@ -192,7 +191,7 @@ namespace CBT.Core.Tasks
         {
             if (String.IsNullOrWhiteSpace(input))
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
 
             if (!File.Exists(input) || outputs == null || outputs.Length == 0)
@@ -234,7 +233,7 @@ namespace CBT.Core.Tasks
                 }
                 catch (ArgumentException e)
                 {
-                    throw new ArgumentException(String.Format("Specified static method \"{0}.Execute\" does not match required signature 'bool Execute(string, string, Action<string>, Action<string>, CancellationToken)'", NuGetDownloaderClassName), e);
+                    throw new ArgumentException($"Specified static method \"{NuGetDownloaderClassName}.Execute\" does not match required signature 'bool Execute(string, string, Action<string>, Action<string>, CancellationToken)'", e);
                 }
 
                 // ReSharper disable once PossibleNullReferenceException
@@ -311,7 +310,7 @@ namespace CBT.Core.Tasks
             {
                 process.ErrorDataReceived += (sender, args) =>
                 {
-                    if (args != null && !String.IsNullOrWhiteSpace(args.Data))
+                    if (!String.IsNullOrWhiteSpace(args?.Data))
                     {
                         _log.LogError(args.Data);
                     }
@@ -319,19 +318,20 @@ namespace CBT.Core.Tasks
 
                 process.OutputDataReceived += (sender, args) =>
                 {
-                    if (args != null && !String.IsNullOrWhiteSpace(args.Data))
+                    if (!String.IsNullOrWhiteSpace(args?.Data))
                     {
                         _log.LogMessage(args.Data);
                     }
                 };
 
+                // ReSharper disable once AccessToDisposedClosure
                 process.Exited += (sender, args) => processExited.Set();
 
                 _log.LogMessage(MessageImportance.Low, "{0} {1}", process.StartInfo.FileName, process.StartInfo.Arguments);
 
                 if (!process.Start())
                 {
-                    throw new Exception(String.Format("Failed to start process \"{0} {1}\"", process.StartInfo.FileName, process.StartInfo.Arguments));
+                    throw new Exception($"Failed to start process \"{process.StartInfo.FileName} {process.StartInfo.Arguments}\"");
                 }
 
                 process.StandardInput.Close();
@@ -345,7 +345,7 @@ namespace CBT.Core.Tasks
                 {
                     if (process.ExitCode != 0)
                     {
-                        throw new Exception(String.Format("Restoring CBT modules failed with an exit code of '{0}'.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.", process.ExitCode));
+                        throw new Exception($"Restoring CBT modules failed with an exit code of '{process.ExitCode}'.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.");
                     }
 
                     return true;

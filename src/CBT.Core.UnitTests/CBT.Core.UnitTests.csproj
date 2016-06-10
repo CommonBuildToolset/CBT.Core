@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>{85318209-7822-487F-BBC6-CEC5E5E3E167}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -24,24 +24,24 @@
       <Name>Shouldly</Name>
       <Private>True</Private>
     </Reference>
-    <Reference Include="$(NuGetPath_NUnit)\lib\nunit.framework.dll">
+    <Reference Include="$(NuGetPath_NUnit)\lib\net45\nunit.framework.dll">
       <Name>nunit.framework</Name>
       <Private>True</Private>
     </Reference>
-    <Reference Include="$(NuGetPath_NUnitTestAdapter)\lib\nunit.core.dll">
-      <Name>nunit.core</Name>
+    <Reference Include="$(NuGetPath_NUnit3TestAdapter)\lib\Mono.Cecil.dll">
+      <Name>Mono.Cecil</Name>
       <Private>True</Private>
     </Reference>
-    <Reference Include="$(NuGetPath_NUnitTestAdapter)\lib\nunit.core.interfaces.dll">
-      <Name>nunit.core.interfaces</Name>
+    <Reference Include="$(NuGetPath_NUnit3TestAdapter)\lib\nunit.engine.api.dll">
+      <Name>nunit.engine.api</Name>
       <Private>True</Private>
     </Reference>
-    <Reference Include="$(NuGetPath_NUnitTestAdapter)\lib\nunit.util.dll">
-      <Name>nunit.util</Name>
+    <Reference Include="$(NuGetPath_NUnit3TestAdapter)\lib\nunit.engine.dll">
+      <Name>nunit.engine</Name>
       <Private>True</Private>
     </Reference>
-    <Reference Include="$(NuGetPath_NUnitTestAdapter)\lib\NUnit.VisualStudio.TestAdapter.dll">
-      <Name>NUnit.VisualStudio.TestAdapter</Name>
+    <Reference Include="$(NuGetPath_NUnit3TestAdapter)\lib\NUnit3.TestAdapter.dll">
+      <Name>NUnit3.TestAdapter</Name>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

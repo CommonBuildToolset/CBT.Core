@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
+// ReSharper disable PossibleNullReferenceException
+
 namespace CBT.Core.UnitTests
 {
     [TestFixture]
@@ -54,11 +56,13 @@ namespace CBT.Core.UnitTests
 
             bool success = modulePropertyGenerator.Generate(outputPath, extensionsPath, importsBefore, importsAfter);
 
-            success.ShouldBe(true);
+            success.ShouldBeTrue();
 
             File.Exists(outputPath).ShouldBeTrue();
 
             ProjectRootElement project = ProjectRootElement.Open(outputPath);
+
+            project.ShouldNotBeNull();
 
             // Verify all properties
             //
@@ -67,8 +71,8 @@ namespace CBT.Core.UnitTests
                 new Tuple<string, string>("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)"),
             }.Concat(_packages.Select(i =>
                 new Tuple<string, string>(
-                    String.Format("{0}{1}", ModulePropertyGenerator.PropertyNamePrefix, i.Id.Replace(".", "_")),
-                    String.Format("{0}{1}.{2}", ModulePropertyGenerator.PropertyValuePrefix, i.Id, i.VersionString)))))
+                    $"{ModulePropertyGenerator.PropertyNamePrefix}{i.Id.Replace(".", "_")}",
+                    $"{ModulePropertyGenerator.PropertyValuePrefix}{i.Id}.{i.VersionString}"))))
             {
                 ProjectPropertyElement propertyElement = project.Properties.FirstOrDefault(i => i.Name.Equals(item.Item1));
 
@@ -88,7 +92,7 @@ namespace CBT.Core.UnitTests
 
                 import.Project.ShouldBe(importsBefore[i]);
 
-                import.Condition.ShouldBe(String.Format(" Exists('{0}') ", importsBefore[i]));
+                import.Condition.ShouldBe($" Exists('{importsBefore[i]}') ");
             }
 
             // Verify "after" imports
@@ -101,7 +105,7 @@ namespace CBT.Core.UnitTests
 
                 import.Project.ShouldBe(importsAfter[i]);
 
-                import.Condition.ShouldBe(String.Format(" Exists('{0}') ", importsAfter[i]));
+                import.Condition.ShouldBe($" Exists('{importsAfter[i]}') ");
             }
 
             // Verify module extensions were created
@@ -114,21 +118,25 @@ namespace CBT.Core.UnitTests
 
                 ProjectRootElement extensionProject = ProjectRootElement.Open(extensionPath);
 
+                extensionProject.ShouldNotBeNull();
+
                 extensionProject.Imports.Count.ShouldBe(_packages.Count);
 
                 for (int i = 0; i < _packages.Count; i++)
                 {
-                    string importProject = String.Format("$({0}{1})\\{2}", ModulePropertyGenerator.PropertyNamePrefix, _packages[i].Id.Replace(".", "_"), ModulePropertyGenerator.ImportRelativePath);
+                    string importProject = $"$({ModulePropertyGenerator.PropertyNamePrefix}{_packages[i].Id.Replace(".", "_")})\\{ModulePropertyGenerator.ImportRelativePath}";
                     ProjectImportElement import = extensionProject.Imports.Skip(i).FirstOrDefault();
+
+                    import.ShouldNotBeNull();
 
                     import.Project.ShouldBe(importProject);
 
-                    import.Condition.ShouldBe(String.Format("Exists('{0}')", importProject));
+                    import.Condition.ShouldBe($"Exists('{importProject}')");
                 }
             }
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void TestCleanup()
         {
             if (Directory.Exists(_intermediateOutputPath))
@@ -137,7 +145,7 @@ namespace CBT.Core.UnitTests
             }
         }
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void TestInitialize()
         {
             Directory.CreateDirectory(_packagesPath);

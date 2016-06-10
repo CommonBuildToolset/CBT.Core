@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -43,17 +42,17 @@ namespace CBT.Core.Internal
         {
             if (String.IsNullOrWhiteSpace(packagesPath))
             {
-                throw new ArgumentNullException("packagesPath");
+                throw new ArgumentNullException(nameof(packagesPath));
             }
 
             if (!Directory.Exists(packagesPath))
             {
-                throw new DirectoryNotFoundException(String.Format(CultureInfo.CurrentCulture, "Could not find part of the path '{0}'", packagesPath));
+                throw new DirectoryNotFoundException($"Could not find part of the path '{packagesPath}'");
             }
 
             if (packageConfigPaths == null)
             {
-                throw new ArgumentNullException("packageConfigPaths");
+                throw new ArgumentNullException(nameof(packageConfigPaths));
             }
 
             _packagesPath = packagesPath;
@@ -66,13 +65,13 @@ namespace CBT.Core.Internal
         {
             ProjectRootElement project = CreateProjectWithNuGetProperties();
 
-            List<string> properties = project.Properties.Where(i => i.Name.StartsWith(PropertyNamePrefix)).Select(i => String.Format("$({0})", i.Name)).ToList();
+            List<string> properties = project.Properties.Where(i => i.Name.StartsWith(PropertyNamePrefix)).Select(i => $"$({i.Name})").ToList();
 
             if (beforeModuleImports != null)
             {
                 foreach (ProjectImportElement import in beforeModuleImports.Where(i => !String.IsNullOrWhiteSpace(i)).Select(project.AddImport))
                 {
-                    import.Condition = String.Format(" Exists('{0}') ", import.Project);
+                    import.Condition = $" Exists('{import.Project}') ";
                 }
             }
 
@@ -82,7 +81,7 @@ namespace CBT.Core.Internal
             {
                 foreach (ProjectImportElement import in afterModuleImports.Where(i => !String.IsNullOrWhiteSpace(i)).Select(project.AddImport))
                 {
-                    import.Condition = String.Format(" Exists('{0}') ", import.Project);
+                    import.Condition = $" Exists('{import.Project}') ";
                 }
             }
 
@@ -104,7 +103,7 @@ namespace CBT.Core.Internal
         {
             foreach (ProjectImportElement import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(modulePath => project.AddImport(Path.Combine(modulePath, ImportRelativePath))))
             {
-                import.Condition = String.Format("Exists('{0}')", import.Project);
+                import.Condition = $"Exists('{import.Project}')";
             }
         }
 
@@ -120,8 +119,8 @@ namespace CBT.Core.Internal
             {
                 // Generate the property name and value once
                 //
-                string propertyName = String.Format(CultureInfo.CurrentCulture, "{0}{1}", PropertyNamePrefix, item.Id.Replace(".", "_"));
-                string propertyValue = String.Format(CultureInfo.CurrentCulture, "{0}{1}.{2}", PropertyValuePrefix, item.Id, item.VersionString);
+                string propertyName = $"{PropertyNamePrefix}{item.Id.Replace(".", "_")}";
+                string propertyValue = $"{PropertyValuePrefix}{item.Id}.{item.VersionString}";
 
                 propertyGroup.SetProperty(propertyName, propertyValue);
             }
@@ -141,16 +140,13 @@ namespace CBT.Core.Internal
                 {
                     XDocument document = XDocument.Load(path);
 
-                    if (document.Root != null)
-                    {
-                        XElement extensionImportsElement = document.Root.Element("extensionImports");
+                    XElement extensionImportsElement = document.Root?.Element("extensionImports");
 
-                        if (extensionImportsElement != null)
+                    if (extensionImportsElement != null)
+                    {
+                        foreach (string item in extensionImportsElement.Elements("add").Select(i => i.Attribute("name")).Where(i => !String.IsNullOrWhiteSpace(i?.Value)).Select(i => i.Value))
                         {
-                            foreach (string item in extensionImportsElement.Elements("add").Select(i => i.Attribute("name")).Where(i => i != null && !String.IsNullOrWhiteSpace(i.Value)).Select(i => i.Value))
-                            {
-                                extensionImports.TryAdd(item, packageInfo.Id);
-                            }
+                            extensionImports.TryAdd(item, packageInfo.Id);
                         }
                     }
                 }
@@ -184,7 +180,7 @@ namespace CBT.Core.Internal
                             continue;
                         }
 
-                        PackageInfo packageInfo = new PackageInfo(item.Id, item.Version, Path.Combine(_packagesPath, String.Format("{0}.{1}", item.Id, item.Version)));
+                        PackageInfo packageInfo = new PackageInfo(item.Id, item.Version, Path.Combine(_packagesPath, $"{item.Id}.{item.Version}"));
 
                         if (packages.ContainsKey(packageInfo.Id))
                         {
