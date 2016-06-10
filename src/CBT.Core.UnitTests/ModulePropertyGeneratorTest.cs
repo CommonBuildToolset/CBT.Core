@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
+// ReSharper disable PossibleNullReferenceException
+
 namespace CBT.Core.UnitTests
 {
     [TestFixture]
