@@ -20,30 +20,6 @@
     <Reference Include="Microsoft.Build.Framework, Version=$(MSBuildToolsVersion).0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <Private>false</Private>
     </Reference>
-    <Reference Include="$(NuGetPath_Shouldly)\lib\net40\Shouldly.dll">
-      <Name>Shouldly</Name>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="$(NuGetPath_NUnit)\lib\net45\nunit.framework.dll">
-      <Name>nunit.framework</Name>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="$(NuGetPath_NUnit3TestAdapter)\lib\Mono.Cecil.dll">
-      <Name>Mono.Cecil</Name>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="$(NuGetPath_NUnit3TestAdapter)\lib\nunit.engine.api.dll">
-      <Name>nunit.engine.api</Name>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="$(NuGetPath_NUnit3TestAdapter)\lib\nunit.engine.dll">
-      <Name>nunit.engine</Name>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="$(NuGetPath_NUnit3TestAdapter)\lib\NUnit3.TestAdapter.dll">
-      <Name>NUnit3.TestAdapter</Name>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
@@ -62,9 +38,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="project.json"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CBT.Core\CBT.Core.csproj">
