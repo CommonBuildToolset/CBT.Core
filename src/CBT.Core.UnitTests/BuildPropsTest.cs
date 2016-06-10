@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Microsoft.Build.Construction;
 using NUnit.Framework;
@@ -15,10 +16,10 @@ namespace CBT.Core.UnitTests
     {
         private ProjectRootElement _project;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void TestInitialize()
         {
-            _project = ProjectRootElement.Open("build.props");
+            _project = ProjectRootElement.Open(Path.Combine(TestContext.CurrentContext.TestDirectory, "build.props"));
         }
 
         [Test]

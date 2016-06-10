@@ -134,7 +134,7 @@ namespace CBT.Core.UnitTests
             }
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void TestCleanup()
         {
             if (Directory.Exists(_intermediateOutputPath))
@@ -143,7 +143,7 @@ namespace CBT.Core.UnitTests
             }
         }
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void TestInitialize()
         {
             Directory.CreateDirectory(_packagesPath);
