@@ -1,11 +1,11 @@
 ﻿{
   "dependencies": {
     "NUnit": {
-      "version": "2.6.4",
+      "version": "3.2.1",
       "suppressParent": "none"
     },
-    "NUnitTestAdapter": "2.0.0",
-    "Shouldly": "2.6.0"
+    "NUnit3TestAdapter": "3.2.0",
+    "Shouldly": "2.7.0"
   },
   "frameworks": {
     "net45": {}
