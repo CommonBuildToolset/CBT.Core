@@ -17,12 +17,12 @@ namespace CBT.Core.Internal
         {
             if(task == null)
             {
-                throw new ArgumentNullException("task");
+                throw new ArgumentNullException(nameof(task));
             }
 
             if (String.IsNullOrWhiteSpace(taskName))
             {
-                throw new ArgumentNullException("task");
+                throw new ArgumentNullException(nameof(task));
             }
 
             _task = task;
@@ -49,7 +49,7 @@ namespace CBT.Core.Internal
         {
             if (String.IsNullOrWhiteSpace(message))
             {
-                throw new ArgumentNullException("message");
+                throw new ArgumentNullException(nameof(message));
             }
 
             _task.BuildEngine.LogMessageEvent(new CriticalBuildMessageEventArgs(null, null, null, 0, 0, 0, 0, message, null, null, DateTime.UtcNow, args));
@@ -75,7 +75,7 @@ namespace CBT.Core.Internal
         {
             if (String.IsNullOrWhiteSpace(message))
             {
-                throw new ArgumentNullException("message");
+                throw new ArgumentNullException(nameof(message));
             }
 
             _task.BuildEngine.LogErrorEvent(new BuildErrorEventArgs(null, null, null, 0, 0, 0, 0, message, null, _taskName, DateTime.UtcNow, args));
@@ -103,7 +103,7 @@ namespace CBT.Core.Internal
         {
             if (String.IsNullOrWhiteSpace(message))
             {
-                throw new ArgumentNullException("message");
+                throw new ArgumentNullException(nameof(message));
             }
 
             _task.BuildEngine.LogMessageEvent(new BuildMessageEventArgs(message, null, _taskName, importance, DateTime.UtcNow, args));
@@ -131,7 +131,7 @@ namespace CBT.Core.Internal
         {
             if (String.IsNullOrWhiteSpace(message))
             {
-                throw new ArgumentNullException("message");
+                throw new ArgumentNullException(nameof(message));
             }
 
             _task.BuildEngine.LogWarningEvent(new BuildWarningEventArgs(null, null, null, 0, 0, 0, 0, message, null, _taskName, DateTime.UtcNow, args));

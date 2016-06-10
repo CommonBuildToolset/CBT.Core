@@ -36,14 +36,11 @@ namespace CBT.Core.Internal
                 {
                     object loggingService = loggingServiceProperty.GetMethod.Invoke(buildManager, null);
 
-                    if (loggingService != null)
-                    {
-                        MethodInfo logBuildEventMethod = loggingService.GetType().GetMethod("LogBuildEvent", new[] {typeof (BuildEventArgs)});
+                    MethodInfo logBuildEventMethod = loggingService?.GetType().GetMethod("LogBuildEvent", new[] {typeof (BuildEventArgs)});
 
-                        if (logBuildEventMethod != null)
-                        {
-                            _logBuildEventHandler = (LogBuildEventHandler) logBuildEventMethod.CreateDelegate(typeof (LogBuildEventHandler), loggingService);
-                        }
+                    if (logBuildEventMethod != null)
+                    {
+                        _logBuildEventHandler = (LogBuildEventHandler) logBuildEventMethod.CreateDelegate(typeof (LogBuildEventHandler), loggingService);
                     }
                 }
                 catch (Exception e)
@@ -62,23 +59,23 @@ namespace CBT.Core.Internal
         /// <summary>
         /// Retrieves the line number of the task node within the project file that called it.
         /// </summary>
-        public int ColumnNumberOfTaskNode { get; private set; }
+        public int ColumnNumberOfTaskNode { get; }
 
         /// <summary>
         /// Returns true if the ContinueOnError flag was set to true for this particular task
         /// in the project file.
         /// </summary>
-        public bool ContinueOnError { get; private set; }
+        public bool ContinueOnError { get; }
 
         /// <summary>
         /// Retrieves the line number of the task node within the project file that called it.
         /// </summary>
-        public int LineNumberOfTaskNode { get; private set; }
+        public int LineNumberOfTaskNode { get; }
 
         /// <summary>
         /// Returns the full path to the project file that contained the call to this task.
         /// </summary>
-        public string ProjectFileOfTaskNode { get; private set; }
+        public string ProjectFileOfTaskNode { get; }
 
         public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs)
         {

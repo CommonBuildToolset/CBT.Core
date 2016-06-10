@@ -16,12 +16,12 @@ namespace CBT.Core.Internal
         {
             if (String.IsNullOrEmpty(path))
             {
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             }
 
             if (cancellationToken == null)
             {
-                throw new ArgumentNullException("cancellationToken");
+                throw new ArgumentNullException(nameof(cancellationToken));
             }
 
             Uri downloadUri = DefaultNuGetUrl;
@@ -34,13 +34,13 @@ namespace CBT.Core.Internal
 
                 if (!Uri.TryCreate(arguments, UriKind.Absolute, out uri) || !Path.GetFileName(uri.LocalPath).Equals("nuget.exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new ArgumentException(String.Format("The specified NuGet downloader arguments '{0}' are invalid.  The value must be a valid URL that points to NuGet.exe.", arguments));
+                    throw new ArgumentException($"The specified NuGet downloader arguments '{arguments}' are invalid.  The value must be a valid URL that points to NuGet.exe.");
                 }
 
                 downloadUri = uri;
             }
 
-            logInfo(String.Format("Downloading NuGet from '{0}'", downloadUri));
+            logInfo($"Downloading NuGet from '{downloadUri}'");
             
             string filePath = Path.Combine(path, Path.GetFileName(downloadUri.LocalPath));
 
