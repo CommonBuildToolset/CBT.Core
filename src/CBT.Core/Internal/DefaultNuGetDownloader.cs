@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading;
 
@@ -24,6 +26,8 @@ namespace CBT.Core.Internal
                 throw new ArgumentNullException(nameof(cancellationToken));
             }
 
+            bool success = true;
+
             Uri downloadUri = DefaultNuGetUrl;
 
             // Attempt to parse the arguments as a URL to NuGet.exe
@@ -41,47 +45,83 @@ namespace CBT.Core.Internal
             }
 
             logInfo($"Downloading NuGet from '{downloadUri}'");
-            
+
             string filePath = Path.Combine(path, Path.GetFileName(downloadUri.LocalPath));
 
-            using (WebClient webClient = new WebClient())
+            Retry(() =>
+            {
+                using (WebClient webClient = new WebClient())
+                {
+                    try
+                    {
+                        webClient.DownloadFileTaskAsync(downloadUri, filePath).Wait(cancellationToken);
+                    }
+                    catch (Exception e)
+                    {
+                        if (e is AggregateException)
+                        {
+                            e = ((AggregateException) e).Flatten().InnerExceptions.Last();
+                        }
+
+                        logInfo($"{e.Message}");
+
+                        webClient.CancelAsync();
+
+                        try
+                        {
+                            Retry(() =>
+                            {
+                                // Clean up any partially downloaded file
+                                //
+                                if (File.Exists(filePath))
+                                {
+                                    File.Delete(filePath);
+                                }
+                            }, TimeSpan.FromMilliseconds(200));
+                        }
+                        catch (Exception)
+                        {
+                            // Ignored
+                        }
+
+                        if (e is OperationCanceledException)
+                        {
+                            success = false;
+                            return;
+                        }
+
+                        throw;
+                    }
+                }
+            }, TimeSpan.FromSeconds(3));
+
+            return success;
+        }
+
+        private static void Retry(Action action, TimeSpan retryInterval, int retryCount = 3)
+        {
+            List<Exception> exceptions = new List<Exception>();
+
+            for (int retry = 0; retry < retryCount; retry++)
             {
                 try
                 {
-                    webClient.DownloadFileTaskAsync(downloadUri, filePath).Wait(cancellationToken);
-                    
-                    return true;
-                }
-                catch (Exception)
-                {
-                    
-                    webClient.CancelAsync();
-
-                    if (File.Exists(filePath))
+                    if (retry > 0)
                     {
-                        // Delete any file that was partially downloaded when canceling
-                        //
-                        for (int i = 0; i < 10; i++)
-                        {
-                            try
-                            {
-                                File.Delete(filePath);
-                                break;
-                            }
-                            catch (Exception)
-                            {
-                                // Ignored because in some cases the file is in use still
-                                //
-                            }
-
-                            // ReSharper disable once MethodSupportsCancellation
-                            Thread.Sleep(TimeSpan.FromMilliseconds(200));
-                        }
+                        Thread.Sleep(retryInterval);
                     }
+
+                    action();
+
+                    return;
+                }
+                catch (Exception e)
+                {
+                    exceptions.Add(e);
                 }
             }
 
-            return false;
+            throw new AggregateException(exceptions);
         }
     }
 }
