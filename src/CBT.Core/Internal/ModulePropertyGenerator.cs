@@ -115,6 +115,8 @@ namespace CBT.Core.Internal
 
             propertyGroup.SetProperty("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)");
 
+            propertyGroup.SetProperty("CBTAllModulePaths", String.Join(";", _packages.Values.Select(i => $"{i.Id}={i.Path}")));
+
             foreach (PackageInfo item in _packages.Values)
             {
                 // Generate the property name and value once
