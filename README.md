@@ -4,7 +4,7 @@ The core functionality of CBT.  Use the template projects when adding CBT to you
 
 ### Build status
 
-![Build status](https://jeffkl.visualstudio.com/DefaultCollection/_apis/public/build/definitions/ff0258cc-241d-41b5-a0b6-114e439b9c14/4/badge)
+![Build status](https://jeffkl.visualstudio.com/DefaultCollection/_apis/public/build/definitions/ff0258cc-241d-41b5-a0b6-114e439b9c14/12/badge)
 
 ## License
 
