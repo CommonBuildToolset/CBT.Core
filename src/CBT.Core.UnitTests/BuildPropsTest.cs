@@ -30,7 +30,7 @@ namespace CBT.Core.UnitTests
             {
                 {"CBTCoreAssemblyPath", null},
                 {"CBTIntermediateOutputPath", null},
-                {"CBTModulePackageConfigPath", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\packages.config') "},
+                {"CBTModulePackageConfigPath", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\project.json') "},
                 {"CBTModulePath", null},
                 {"CBTModulePropertiesFile", null},
                 {"CBTModuleExtensionsPath", null},
@@ -110,6 +110,7 @@ namespace CBT.Core.UnitTests
                 {"NuGetDownloaderClassName", "$(CBTNuGetDownloaderClassName)"},
                 {"NuGetDownloaderArguments", "$(CBTNuGetDownloaderArguments)"},
                 {"PackageConfig", "$(CBTModulePackageConfigPath)"},
+                {"PackagesFallbackPath", "$(CBTPackagesFallbackPath)"},
                 {"PackagesPath", "$(NuGetPackagesPath)"},
                 {"RestoreCommand", "$(CBTModuleRestoreCommand)"},
                 {"RestoreCommandArguments", "$(CBTModuleRestoreCommandArguments)"}

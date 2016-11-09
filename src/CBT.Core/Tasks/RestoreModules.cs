@@ -1,10 +1,13 @@
 ﻿using CBT.Core.Internal;
 using Microsoft.Build.Framework;
+using NuGet.Common;
+using NuGet.Configuration;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,6 +25,8 @@ namespace CBT.Core.Tasks
 
         public RestoreModules()
         {
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => Regex.IsMatch(args.Name, @"NuGet[^,]+, Version=[\d\.]+, Culture=[^,]+, PublicKeyToken=31bf3856ad364e35") ? Assembly.LoadFrom(RestoreCommand) : null;
+
             _log = new CBTTaskLogHelper(this);
         }
 
@@ -56,16 +61,17 @@ namespace CBT.Core.Tasks
 
         public string[] Inputs { get; set; }
 
+        public string NuGetDownloaderArguments { get; set; }
+
         public string NuGetDownloaderAssemblyPath { get; set; }
 
         public string NuGetDownloaderClassName { get; set; }
 
-        public string NuGetDownloaderArguments { get; set; }
-
         [Required]
         public string PackageConfig { get; set; }
 
-        [Required]
+        public string PackagesFallbackPath { get; set; }
+
         public string PackagesPath { get; set; }
 
         public string RestoreCommand { get; set; }
@@ -145,7 +151,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string packagesPath, string restoreCommand, string restoreCommandArguments)
+        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string packagesPath, string packagesFallbackPath, string restoreCommand, string restoreCommandArguments)
         {
             if (Directory.Exists(packagesPath) && IsFileUpToDate(importsFile, inputs))
             {
@@ -161,6 +167,7 @@ namespace CBT.Core.Tasks
             NuGetDownloaderClassName = nuGetDownloaderClassName;
             NuGetDownloaderArguments = nuGetDownloaderArguments;
             PackageConfig = packageConfig;
+            PackagesFallbackPath = packagesFallbackPath;
             PackagesPath = packagesPath;
             RestoreCommand = restoreCommand;
             RestoreCommandArguments = restoreCommandArguments;
@@ -229,7 +236,7 @@ namespace CBT.Core.Tasks
                 NuGetDownloader nuGetDownloader;
                 try
                 {
-                    nuGetDownloader = Delegate.CreateDelegate(typeof (NuGetDownloader), type, "Execute", ignoreCase: true, throwOnBindFailure: true) as NuGetDownloader;
+                    nuGetDownloader = Delegate.CreateDelegate(typeof(NuGetDownloader), type, "Execute", ignoreCase: true, throwOnBindFailure: true) as NuGetDownloader;
                 }
                 catch (ArgumentException e)
                 {
@@ -289,8 +296,55 @@ namespace CBT.Core.Tasks
             return false;
         }
 
+        /// <summary>
+        /// Gets the effective packages path which can vary whether the path is user specified, contained in a settings file, or provided as an environment variable.
+        /// </summary>
+        /// <param name="settings">The <see cref="ISettings"/> to use when getting the path from a NuGet.config file.</param>
+        /// <returns>The effective package path.</returns>
+        private string GetEffectivePackagesPath(ISettings settings)
+        {
+            string packagesPath = null;
+
+            string packageConfigFileName = Path.GetFileName(PackageConfig);
+
+            if (packageConfigFileName != null && packageConfigFileName.Equals(NuGet.ProjectManagement.Constants.PackageReferenceFile, StringComparison.OrdinalIgnoreCase))
+            {
+                packagesPath = !String.IsNullOrWhiteSpace(PackagesPath) ? PackagesPath
+                    : SettingsUtility.GetRepositoryPath(settings)
+                      ?? SettingsUtility.GetGlobalPackagesFolder(settings) // This shouldn't technically count but it makes sense to obey the new locations for the older style
+                      ?? PackagesFallbackPath;
+            }
+            else if (packageConfigFileName != null && packageConfigFileName.Equals(ProjectJsonPathUtilities.ProjectConfigFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                packagesPath = !String.IsNullOrWhiteSpace(PackagesPath) ? PackagesPath
+                    : SettingsUtility.GetGlobalPackagesFolder(settings)
+                      ?? PackagesFallbackPath;
+            }
+
+            return String.IsNullOrWhiteSpace(packagesPath) ? null : Path.GetFullPath(packagesPath).TrimEnd(Path.DirectorySeparatorChar);
+        }
+
         private bool RestorePackages()
         {
+            _log.LogMessage($"PackagesPath: '{PackagesPath}'");
+            _log.LogMessage($"PackagesFallbackPath: '{PackagesFallbackPath}'");
+            NuGetSettingsHelper nuGetSettingsHelper = new NuGetSettingsHelper(Path.GetDirectoryName(PackageConfig));
+
+            PackagesPath = GetEffectivePackagesPath(nuGetSettingsHelper.Settings);
+
+            if (String.IsNullOrWhiteSpace(PackagesPath))
+            {
+                _log.LogError("Unable to determine the path to a NuGet packages folder.");
+                return false;
+            }
+
+            if (RestoreCommandArguments.IndexOf("-o", StringComparison.OrdinalIgnoreCase) < 0 && RestoreCommandArguments.IndexOf("-PackagesDirectory", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                RestoreCommandArguments = $"{RestoreCommandArguments} -PackagesDirectory \"{PackagesPath}\"";
+            }
+
+            _log.LogMessage(MessageImportance.Normal, $"{RestoreCommand} {RestoreCommandArguments}");
+
             using (ManualResetEvent processExited = new ManualResetEvent(false))
             using (Process process = new Process
             {

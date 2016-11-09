@@ -1,0 +1,13 @@
+﻿{
+  "dependencies": {
+    "Microsoft.Build": "14.3.0",
+    "NuGet.Configuration": "3.4.3",
+    "NuGet.ProjectManagement": "3.4.3"
+  },
+  "frameworks": {
+    "net45": {}
+  },
+  "runtimes": {
+    "win": {}
+  }
+}
