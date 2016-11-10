@@ -21,7 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extensions", "Extensions", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CBTModules", "CBTModules", "{578F8547-A15D-4DF0-ABD3-0FAA988F07D1}"
 	ProjectSection(SolutionItems) = preProject
-		..\.build\local\CBTModules\packages.config = ..\.build\local\CBTModules\packages.config
+		..\.build\local\CBTModules\project.json = ..\.build\local\CBTModules\project.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CBT.Core.UnitTests", "CBT.Core.UnitTests\CBT.Core.UnitTests.csproj", "{85318209-7822-487F-BBC6-CEC5E5E3E167}"
