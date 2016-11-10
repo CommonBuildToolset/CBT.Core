@@ -26,6 +26,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CBTModules", "CBTModules", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CBT.Core.UnitTests", "CBT.Core.UnitTests\CBT.Core.UnitTests.csproj", "{85318209-7822-487F-BBC6-CEC5E5E3E167}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B60B1582-A650-4E6B-B2BB-4FBA1581DC3E}"
+	ProjectSection(SolutionItems) = preProject
+		..\build.props = ..\build.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
