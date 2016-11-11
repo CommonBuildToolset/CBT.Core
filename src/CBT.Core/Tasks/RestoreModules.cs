@@ -153,7 +153,7 @@ namespace CBT.Core.Tasks
 
         public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string packagesPath, string packagesFallbackPath, string restoreCommand, string restoreCommandArguments)
         {
-            if (Directory.Exists(packagesPath) && IsFileUpToDate(importsFile, inputs))
+            if ((String.IsNullOrWhiteSpace(packagesPath) || Directory.Exists(packagesPath)) && IsFileUpToDate(importsFile, inputs))
             {
                 return true;
             }
@@ -326,8 +326,6 @@ namespace CBT.Core.Tasks
 
         private bool RestorePackages()
         {
-            _log.LogMessage($"PackagesPath: '{PackagesPath}'");
-            _log.LogMessage($"PackagesFallbackPath: '{PackagesFallbackPath}'");
             NuGetSettingsHelper nuGetSettingsHelper = new NuGetSettingsHelper(Path.GetDirectoryName(PackageConfig));
 
             PackagesPath = GetEffectivePackagesPath(nuGetSettingsHelper.Settings);
