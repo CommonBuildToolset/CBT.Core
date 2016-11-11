@@ -4,6 +4,7 @@
     <AssemblyInfoProduct>Common Build Toolset (CBT)</AssemblyInfoProduct>
     <AssemblyInfoCompany>$(AssemblyInfoProduct)</AssemblyInfoCompany>
     <AssemblyInfoCopyright>Copyright © 2016</AssemblyInfoCopyright>
+    <AssemblyInfoCLSCompliant>false</AssemblyInfoCLSCompliant>
   </PropertyGroup>
   
   <PropertyGroup>

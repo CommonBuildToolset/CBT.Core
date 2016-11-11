@@ -10,12 +10,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
-    <Reference Include="Microsoft.Build, Version=$(MSBuildToolsVersion).0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Microsoft.Build.Framework, Version=$(MSBuildToolsVersion).0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <Private>false</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
@@ -24,8 +18,13 @@
     <Compile Include="Internal\DefaultNuGetDownloader.cs" />
     <Compile Include="Internal\CBTTaskLogHelper.cs" />
     <Compile Include="Internal\CBTBuildEngine.cs" />
+    <Compile Include="Internal\INuGetPackageConfigParser.cs" />
+    <Compile Include="Internal\INuGetSettingsHelper.cs" />
     <Compile Include="Internal\ModulePropertyGenerator.cs" />
-    <Compile Include="Internal\PackageInfo.cs" />
+    <Compile Include="Internal\NuGetPackagesConfigParser.cs" />
+    <Compile Include="Internal\NuGetProjectJsonParser.cs" />
+    <Compile Include="Internal\NuGetSettingsHelper.cs" />
+    <Compile Include="Internal\PackageIdentityWithPath.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tasks\RestoreModules.cs" />
   </ItemGroup>
@@ -34,6 +33,13 @@
       <Link>build.props</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="MarkNuGetReferencesAsNotCopyLocal" AfterTargets="ResolveNuGetPackageAssets">
+    <!-- Remove NuGet assembly references from the list of things to copy.  The dependencies will be resolved at runtime instead -->
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition=" '%(ReferenceCopyLocalPaths.NuGetSourceType)' == 'Package' " />
+    </ItemGroup>
+  </Target>
 </Project>

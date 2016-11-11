@@ -1,12 +1,8 @@
 ﻿{
   "dependencies": {
     "Microsoft.Build": "14.3.0",
-    "NUnit": {
-      "version": "3.2.1",
-      "suppressParent": "none"
-    },
-    "NUnit3TestAdapter": "3.2.0",
-    "Shouldly": "2.7.0"
+    "NuGet.Configuration": "3.4.3",
+    "NuGet.ProjectManagement": "3.4.3"
   },
   "frameworks": {
     "net45": {}

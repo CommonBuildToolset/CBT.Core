@@ -12,34 +12,29 @@ namespace CBT.Core.Internal
     internal sealed class ModulePropertyGenerator
     {
         internal const string ImportRelativePath = @"CBT\Module\$(MSBuildThisFile)";
-
         internal const string ModuleConfigPath = @"CBT\Module\module.config";
-
         internal const string PropertyNamePrefix = "CBTModule_";
-
         internal const string PropertyValuePrefix = @"$(NuGetPackagesPath)\";
-
-        /// <summary>
-        /// The name of the 'ID' attribute in the NuGet packages.config.
-        /// </summary>
-        private const string NuGetPackagesConfigIdAttributeName = "id";
-
-        /// <summary>
-        /// The name of the &lt;package /&gt; element in th NuGet packages.config.
-        /// </summary>
-        private const string NuGetPackagesConfigPackageElementName = "package";
-
-        /// <summary>
-        /// The name of the 'Version' attribute in the NuGet packages.config.
-        /// </summary>
-        private const string NuGetPackagesConfigVersionAttributeName = "version";
-
-        private readonly string[] _packageConfigPaths;
-        private readonly IDictionary<string, PackageInfo> _packages;
+        private readonly IList<INuGetPackageConfigParser> _configParsers;
+        private readonly IDictionary<string, PackageIdentityWithPath> _packages;
         private readonly string _packagesPath;
 
         public ModulePropertyGenerator(string packagesPath, params string[] packageConfigPaths)
+            : this(new List<INuGetPackageConfigParser>
+            {
+                new NuGetPackagesConfigParser(),
+                new NuGetProjectJsonParser()
+            }, packagesPath, packageConfigPaths)
         {
+        }
+
+        public ModulePropertyGenerator(IList<INuGetPackageConfigParser> configParsers, string packagesPath, params string[] packageConfigPaths)
+        {
+            if (configParsers == null)
+            {
+                throw new ArgumentNullException(nameof(configParsers));
+            }
+
             if (String.IsNullOrWhiteSpace(packagesPath))
             {
                 throw new ArgumentNullException(nameof(packagesPath));
@@ -55,10 +50,12 @@ namespace CBT.Core.Internal
                 throw new ArgumentNullException(nameof(packageConfigPaths));
             }
 
+            _configParsers = configParsers;
             _packagesPath = packagesPath;
-            _packageConfigPaths = packageConfigPaths;
-
-            _packages = ParsePackages();
+            _packages = packageConfigPaths
+                .SelectMany(i => _configParsers
+                .SelectMany(parser => parser.GetPackages(packagesPath, i)))
+                .ToDictionary(i => i.Id, i => i, StringComparer.OrdinalIgnoreCase);
         }
 
         public bool Generate(string outputPath, string extensionsPath, string[] beforeModuleImports, string[] afterModuleImports)
@@ -114,15 +111,18 @@ namespace CBT.Core.Internal
             ProjectPropertyGroupElement propertyGroup = project.AddPropertyGroup();
 
             propertyGroup.SetProperty("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)");
+            ProjectPropertyElement nuGetPackagesPathProperty = propertyGroup.AddProperty("NuGetPackagesPath", _packagesPath);
 
-            propertyGroup.SetProperty("CBTAllModulePaths", String.Join(";", _packages.Values.Select(i => $"{i.Id}={i.Path}")));
+            nuGetPackagesPathProperty.Condition = " '$(NuGetPackagesPath)' == '' ";
 
-            foreach (PackageInfo item in _packages.Values)
+            propertyGroup.SetProperty("CBTAllModulePaths", String.Join(";", _packages.Values.Select(i => $"{i.Id}={PropertyValuePrefix}{i.Path}")));
+
+            foreach (PackageIdentityWithPath item in _packages.Values)
             {
                 // Generate the property name and value once
                 //
                 string propertyName = $"{PropertyNamePrefix}{item.Id.Replace(".", "_")}";
-                string propertyValue = $"{PropertyValuePrefix}{item.Id}.{item.VersionString}";
+                string propertyValue = $"{PropertyValuePrefix}{item.Path}";
 
                 propertyGroup.SetProperty(propertyName, propertyValue);
             }
@@ -136,7 +136,7 @@ namespace CBT.Core.Internal
 
             Parallel.ForEach(_packages.Values, packageInfo =>
             {
-                string path = Path.Combine(packageInfo.Path, ModuleConfigPath);
+                string path = Path.Combine(packageInfo.FullPath, ModuleConfigPath);
 
                 if (File.Exists(path))
                 {
@@ -155,48 +155,6 @@ namespace CBT.Core.Internal
             });
 
             return extensionImports;
-        }
-
-        private IDictionary<string, PackageInfo> ParsePackages()
-        {
-            IDictionary<string, PackageInfo> packages = new Dictionary<string, PackageInfo>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (string packageConfigPath in _packageConfigPaths.Where(i => !String.IsNullOrWhiteSpace(i) && File.Exists(i)))
-            {
-                XDocument document = XDocument.Load(packageConfigPath);
-
-                if (document.Root != null)
-                {
-                    foreach (var item in document.Root.Elements(NuGetPackagesConfigPackageElementName).Select(i => new
-                    {
-                        Id = i.Attribute(NuGetPackagesConfigIdAttributeName) == null ? null : i.Attribute(NuGetPackagesConfigIdAttributeName).Value,
-                        Version = i.Attribute(NuGetPackagesConfigVersionAttributeName) == null ? null : i.Attribute(NuGetPackagesConfigVersionAttributeName).Value,
-                    }))
-                    {
-                        // Skip packages that are missing an 'id' or 'version' attribute or if they specified value is an empty string
-                        //
-                        if (item.Id == null || item.Version == null ||
-                            String.IsNullOrWhiteSpace(item.Id) ||
-                            String.IsNullOrWhiteSpace(item.Version))
-                        {
-                            continue;
-                        }
-
-                        PackageInfo packageInfo = new PackageInfo(item.Id, item.Version, Path.Combine(_packagesPath, $"{item.Id}.{item.Version}"));
-
-                        if (packages.ContainsKey(packageInfo.Id))
-                        {
-                            packages[packageInfo.Id] = packageInfo;
-                        }
-                        else
-                        {
-                            packages.Add(packageInfo.Id, packageInfo);
-                        }
-                    }
-                }
-            }
-
-            return packages;
         }
     }
 }

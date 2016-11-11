@@ -2,9 +2,9 @@
 
 The core functionality of CBT.  Use the template projects when adding CBT to your code base.
 
-### Build status
+## Build status
 
-![Build status](https://jeffkl.visualstudio.com/DefaultCollection/_apis/public/build/definitions/ff0258cc-241d-41b5-a0b6-114e439b9c14/12/badge)
+[![Build status](https://ci.appveyor.com/api/projects/status/r663s97fvs1bh2jy?svg=true)](https://ci.appveyor.com/project/CBT/cbt-core)
 
 ## License
 
