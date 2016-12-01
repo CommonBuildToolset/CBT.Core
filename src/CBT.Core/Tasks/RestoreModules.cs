@@ -25,7 +25,23 @@ namespace CBT.Core.Tasks
 
         public RestoreModules()
         {
-            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => Regex.IsMatch(args.Name, @"NuGet[^,]+, Version=[\d\.]+, Culture=[^,]+, PublicKeyToken=31bf3856ad364e35") ? Assembly.LoadFrom(RestoreCommand) : null;
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
+            {
+                if (Regex.IsMatch(args.Name, @"NuGet[^,]+, Version=[\d\.]+, Culture=[^,]+, PublicKeyToken=31bf3856ad364e35"))
+                {
+                    try
+                    {
+                        return Assembly.LoadFrom(RestoreCommand);
+                    }
+                    catch (FileLoadException)
+                    {
+                        // Fall back to UnsafeLoadFrom() to "bypass some security checks"
+                        //
+                        Assembly.UnsafeLoadFrom(RestoreCommand);
+                    }
+                }
+                return null;
+            };
 
             _log = new CBTTaskLogHelper(this);
         }
@@ -229,7 +245,18 @@ namespace CBT.Core.Tasks
                     Directory.CreateDirectory(directory);
                 }
 
-                Assembly assembly = Assembly.LoadFrom(NuGetDownloaderAssemblyPath);
+                Assembly assembly;
+                try
+                {
+                    assembly = Assembly.LoadFrom(NuGetDownloaderAssemblyPath);
+                }
+                catch (FileLoadException)
+                {
+                    // FileLoadException can happen if the NuGet downloader assembly isn't trusted by the OS so as a fall back use UnsafeLoadFrom()
+                    // to "bypass some security checks"
+                    //
+                    assembly = Assembly.UnsafeLoadFrom(NuGetDownloaderAssemblyPath);
+                }
 
                 Type type = assembly.GetType(NuGetDownloaderClassName, throwOnError: true);
 
