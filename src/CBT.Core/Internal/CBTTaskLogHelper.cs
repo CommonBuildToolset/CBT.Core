@@ -30,6 +30,11 @@ namespace CBT.Core.Internal
         }
 
         /// <summary>
+        /// Gets a value indication if any errors have been logged.
+        /// </summary>
+        public bool HasLoggedErrors { get; private set; }
+
+        /// <summary>
         /// Logs a critical message using the specified string.
         /// </summary>
         /// <param name="message">The message string.</param>
@@ -79,6 +84,8 @@ namespace CBT.Core.Internal
             }
 
             _task.BuildEngine.LogErrorEvent(new BuildErrorEventArgs(null, null, null, 0, 0, 0, 0, message, null, _taskName, DateTime.UtcNow, args));
+
+            HasLoggedErrors = true;
         }
 
         /// <summary>

@@ -427,6 +427,11 @@ namespace CBT.Core.Tasks
                         throw new Exception($"Restoring CBT modules failed with an exit code of '{process.ExitCode}'.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.");
                     }
 
+                    if (_log.HasLoggedErrors)
+                    {
+                        throw new Exception("Restoring CBT modules failed because of one or more errors.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.");
+                    }
+
                     return true;
                 }
 
