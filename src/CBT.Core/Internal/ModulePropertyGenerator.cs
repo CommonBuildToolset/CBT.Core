@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Microsoft.Build.Evaluation;
 
 namespace CBT.Core.Internal
 {
@@ -86,7 +87,7 @@ namespace CBT.Core.Internal
 
             Parallel.ForEach(GetModuleExtensions(), i =>
             {
-                ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Key.Trim()));
+                ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Key.Trim()), new ProjectCollection());
 
                 AddImports(extensionProject, properties);
 
