@@ -93,7 +93,7 @@ namespace CBT.Core.Internal
 
                 extensionProject.Save();
             }
-        
+
             return true;
         }
 
