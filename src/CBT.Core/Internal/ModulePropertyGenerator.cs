@@ -85,15 +85,15 @@ namespace CBT.Core.Internal
 
             project.Save(outputPath);
 
-            Parallel.ForEach(GetModuleExtensions(), i =>
+            foreach (string item in GetModuleExtensions().Select(i => i.Key.Trim()))
             {
-                ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, i.Key.Trim()), new ProjectCollection());
+                ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, item));
 
                 AddImports(extensionProject, properties);
 
                 extensionProject.Save();
-            });
-
+            }
+        
             return true;
         }
 
