@@ -88,9 +88,9 @@
       Inputs="$(CBTModuleRestoreInputs)"
       Outputs="$(CBTModulePropertiesFile)">
 
-    <Error Condition=" '$(EnlistmentRoot)' == '' " Text="The 'EnlistmentRoot' property must be set." Code="CBT1000" />
+    <Error Condition=" '$(EnlistmentRoot)' == '' " Text="The 'EnlistmentRoot' property must be set.  Please ensure it is declared in a properties file before CBT Core is imported." Code="CBT1000" />
 
-    <Error Condition=" '$(CBTModulesRestored)' == 'false' " Text="Modules were not restored and the build cannot continue.  Refer to other errors for more information." />
+    <Error Condition=" '$(CBTModulesRestored)' == 'false' " Text="Modules were not restored and the build cannot continue.  Refer to other errors for more information." Code="CBT1001" />
 
     <RestoreModules
       AfterImports="$(CBTModuleImportsAfter.Split(';'))"
