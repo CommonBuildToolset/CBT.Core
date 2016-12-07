@@ -22,7 +22,6 @@ namespace CBT.Core.UnitTests
 
         private readonly IList<Tuple<string, string[]>> _moduleExtensions = new List<Tuple<string, string[]>>
         {
-            new Tuple<string, string[]>("Package1", new[] {"before.package1.targets", "after.package1.targets"}),
             new Tuple<string, string[]>("Package2.Thing", new[] {"before.package2.targets"}),
             new Tuple<string, string[]>("Package3.a.b.c.d.e.f", new[] {"before.somethingelse.targets"}),
         };
@@ -46,6 +45,17 @@ namespace CBT.Core.UnitTests
                 new PackageIdentity("Package2.Thing", new NuGetVersion("2.5.1")),
                 new PackageIdentity("Package3.a.b.c.d.e.f", new NuGetVersion(10, 10, 9999, 9999, "beta99", "")),
             };
+            
+            // Have one module contain 200 extensions so we can test scalability
+            //
+            List<string> moduleExtensions = new List<string>();
+            for (int i = 0; i < 100; i++)
+            {
+                moduleExtensions.Add($"before.package{i}.targets");
+                moduleExtensions.Add($"after.package{i}.targets");
+            }
+
+            _moduleExtensions.Add(new Tuple<string, string[]>("Package1", moduleExtensions.ToArray()));
         }
 
         [Test]
