@@ -5,7 +5,7 @@
     <!-- Ensures that if this file changes, projects will be rebuilt -->
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
 
-    <EnlistmentRoot>$(EnlistmentRoot.TrimEnd('\\'))</EnlistmentRoot>
+    <EnlistmentRoot Condition=" '$(EnlistmentRoot)' != '' ">$(EnlistmentRoot.TrimEnd('\\'))</EnlistmentRoot>
 
     <!-- Default CBT global to this directory if not specified -->
     <CBTGlobalPath Condition=" '$(CBTGlobalPath)' == '' ">$(MSBuildThisFileDirectory)</CBTGlobalPath>
@@ -56,7 +56,7 @@
 
   <!-- Load modules -->
 
-  <PropertyGroup>
+  <PropertyGroup Condition=" '$(EnlistmentRoot)' != '' ">
     <CBTCoreAssemblyPath Condition=" '$(CBTCoreAssemblyPath)' == '' ">$(MSBuildThisFileDirectory)CBT.Core.dll</CBTCoreAssemblyPath>
 
     <CBTIntermediateOutputPath Condition=" '$(CBTIntermediateOutputPath)' == '' ">$([System.IO.Path]::GetTempPath())\CBT\$(EnlistmentRoot.ToLower().GetHashcode().ToString('X'))</CBTIntermediateOutputPath>
@@ -88,7 +88,9 @@
       Inputs="$(CBTModuleRestoreInputs)"
       Outputs="$(CBTModulePropertiesFile)">
 
-    <Error Condition=" '$(CBTModulesRestored)' == 'false' " Text="Modules were not restored and the build cannot continue.  Refer to other errors for more information." />
+    <Error Condition=" '$(EnlistmentRoot)' == '' " Text="The 'EnlistmentRoot' property must be set.  Please ensure it is declared in a properties file before CBT Core is imported." Code="CBT1000" />
+
+    <Error Condition=" '$(CBTModulesRestored)' == 'false' " Text="Modules were not restored and the build cannot continue.  Refer to other errors for more information." Code="CBT1001" />
 
     <RestoreModules
       AfterImports="$(CBTModuleImportsAfter.Split(';'))"
