@@ -13,7 +13,8 @@ using System.Threading.Tasks;
 
 namespace CBT.Core.Tasks
 {
-    public sealed class RestoreModules : ICancelableTask, IDisposable
+    [LoadInSeparateAppDomain]
+    public sealed class RestoreModules : MarshalByRefObject, ICancelableTask, IDisposable
     {
         private static readonly TimeSpan NuGetDownloadTimeout = TimeSpan.FromMinutes(2);
 
