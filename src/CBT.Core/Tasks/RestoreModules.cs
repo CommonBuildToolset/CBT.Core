@@ -91,6 +91,9 @@ namespace CBT.Core.Tasks
 
         public string PackagesPath { get; set; }
 
+        [Required]
+        public string ProjectFullPath { get; set; }
+
         public string RestoreCommand { get; set; }
 
         [Required]
@@ -168,7 +171,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string packagesPath, string packagesFallbackPath, string restoreCommand, string restoreCommandArguments)
+        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string packagesPath, string packagesFallbackPath, string restoreCommand, string restoreCommandArguments, string projectFullPath)
         {
             if ((String.IsNullOrWhiteSpace(packagesPath) || Directory.Exists(packagesPath)) && IsFileUpToDate(importsFile, inputs))
             {
@@ -186,6 +189,7 @@ namespace CBT.Core.Tasks
             PackageConfig = packageConfig;
             PackagesFallbackPath = packagesFallbackPath;
             PackagesPath = packagesPath;
+            ProjectFullPath = projectFullPath;
             RestoreCommand = restoreCommand;
             RestoreCommandArguments = restoreCommandArguments;
 
@@ -384,7 +388,7 @@ namespace CBT.Core.Tasks
                     RedirectStandardError = true,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
-                    WorkingDirectory = Environment.CurrentDirectory,
+                    WorkingDirectory = Path.GetDirectoryName(ProjectFullPath) ?? Environment.CurrentDirectory,
                 },
             })
             {
