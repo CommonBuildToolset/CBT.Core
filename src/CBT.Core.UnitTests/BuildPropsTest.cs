@@ -112,6 +112,7 @@ namespace CBT.Core.UnitTests
                 {"PackageConfig", "$(CBTModulePackageConfigPath)"},
                 {"PackagesFallbackPath", "$(CBTPackagesFallbackPath)"},
                 {"PackagesPath", "$(NuGetPackagesPath)"},
+                {"ProjectFullPath","$(MSBuildProjectFullPath)"},
                 {"RestoreCommand", "$(CBTModuleRestoreCommand)"},
                 {"RestoreCommandArguments", "$(CBTModuleRestoreCommandArguments)"}
             });
