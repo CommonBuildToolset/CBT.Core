@@ -1,11 +1,13 @@
 ﻿using CBT.Core.Internal;
 using Microsoft.Build.Construction;
+using Microsoft.Build.Framework;
 using NuGet.Packaging.Core;
 using NuGet.ProjectModel;
 using NuGet.Versioning;
 using NUnit.Framework;
 using Shouldly;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,7 +47,7 @@ namespace CBT.Core.UnitTests
                 new PackageIdentity("Package2.Thing", new NuGetVersion("2.5.1")),
                 new PackageIdentity("Package3.a.b.c.d.e.f", new NuGetVersion(10, 10, 9999, 9999, "beta99", "")),
             };
-            
+
             // Have one module contain 200 extensions so we can test scalability
             //
             List<string> moduleExtensions = new List<string>();
@@ -167,7 +169,12 @@ namespace CBT.Core.UnitTests
                 ).Save(moduleConfigPath);
             }
 
-            ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(_packagesPath, packageConfig);
+            var logHelper = new CBTTaskLogHelper(new TestTask()
+            {
+                BuildEngine = new TestBuildEngine()
+            });
+
+            ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(logHelper, _packagesPath, packageConfig);
 
             string outputPath = Path.Combine(_intermediateOutputPath, "build.props");
             string extensionsPath = Path.Combine(_intermediateOutputPath, "Extensions");
@@ -253,6 +260,45 @@ namespace CBT.Core.UnitTests
 
                     import.Condition.ShouldBe($"Exists('{importProject}')");
                 }
+            }
+        }
+
+        internal sealed class TestBuildEngine : IBuildEngine
+        {
+            // ReSharper disable once CollectionNeverQueried.Local
+            private readonly IList<BuildEventArgs> _loggedBuildEvents = new List<BuildEventArgs>();
+
+            public int ColumnNumberOfTaskNode => 0;
+
+            public bool ContinueOnError => false;
+
+            public int LineNumberOfTaskNode => 0;
+
+            public string ProjectFileOfTaskNode => String.Empty;
+
+            public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs)
+            {
+                throw new NotSupportedException();
+            }
+
+            public void LogCustomEvent(CustomBuildEventArgs e) => _loggedBuildEvents.Add(e);
+
+            public void LogErrorEvent(BuildErrorEventArgs e) => _loggedBuildEvents.Add(e);
+
+            public void LogMessageEvent(BuildMessageEventArgs e) => _loggedBuildEvents.Add(e);
+
+            public void LogWarningEvent(BuildWarningEventArgs e) => _loggedBuildEvents.Add(e);
+        }
+
+        internal sealed class TestTask : ITask
+        {
+            public IBuildEngine BuildEngine { get; set; }
+
+            public ITaskHost HostObject { get; set; }
+
+            public bool Execute()
+            {
+                throw new NotSupportedException();
             }
         }
     }

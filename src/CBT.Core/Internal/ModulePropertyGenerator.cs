@@ -7,11 +7,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.Build.Evaluation;
+using Microsoft.Build.Framework;
 
 namespace CBT.Core.Internal
 {
     internal sealed class ModulePropertyGenerator
     {
+        private readonly CBTTaskLogHelper _log;
         internal const string ImportRelativePath = @"CBT\Module\$(MSBuildThisFile)";
         internal const string ModuleConfigPath = @"CBT\Module\module.config";
         internal const string PropertyNamePrefix = "CBTModule_";
@@ -20,13 +22,14 @@ namespace CBT.Core.Internal
         private readonly IDictionary<string, PackageIdentityWithPath> _packages;
         private readonly string _packagesPath;
 
-        public ModulePropertyGenerator(string packagesPath, params string[] packageConfigPaths)
+        public ModulePropertyGenerator(CBTTaskLogHelper logHelper, string packagesPath, params string[] packageConfigPaths)
             : this(new List<INuGetPackageConfigParser>
             {
                 new NuGetPackagesConfigParser(),
                 new NuGetProjectJsonParser()
             }, packagesPath, packageConfigPaths)
         {
+            _log = logHelper;
         }
 
         public ModulePropertyGenerator(IList<INuGetPackageConfigParser> configParsers, string packagesPath, params string[] packageConfigPaths)
@@ -61,6 +64,11 @@ namespace CBT.Core.Internal
 
         public bool Generate(string outputPath, string extensionsPath, string[] beforeModuleImports, string[] afterModuleImports)
         {
+            _log.LogMessage(MessageImportance.Low, $"Modules:");
+            foreach (PackageIdentityWithPath package in _packages.Values)
+            {
+                _log.LogMessage(MessageImportance.Low, $"  {package.Id} {package.Version}");
+            }
             ProjectRootElement project = CreateProjectWithNuGetProperties();
 
             List<string> properties = project.Properties.Where(i => i.Name.StartsWith(PropertyNamePrefix)).Select(i => $"$({i.Name})").ToList();
@@ -83,6 +91,8 @@ namespace CBT.Core.Internal
                 }
             }
 
+            _log.LogMessage(MessageImportance.Low, $"Saving import file '{outputPath}'.");
+
             project.Save(outputPath);
 
             foreach (string item in GetModuleExtensions().Select(i => i.Key.Trim()))
@@ -90,6 +100,8 @@ namespace CBT.Core.Internal
                 ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, item));
 
                 AddImports(extensionProject, properties);
+
+                _log.LogMessage(MessageImportance.Low, $"Saving import file '{extensionProject.FullPath}'.");
 
                 extensionProject.Save();
             }
@@ -154,6 +166,13 @@ namespace CBT.Core.Internal
                     }
                 }
             });
+
+            _log.LogMessage(MessageImportance.Low, $"Module extensions:");
+
+            foreach (KeyValuePair<string, string> item in extensionImports)
+            {
+                _log.LogMessage(MessageImportance.Low, $"  {item.Key} ({item.Value})");
+            }
 
             return extensionImports;
         }

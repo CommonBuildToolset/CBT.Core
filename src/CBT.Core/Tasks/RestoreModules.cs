@@ -123,6 +123,7 @@ namespace CBT.Core.Tasks
                 {
                     if (!releaseSemaphore)
                     {
+                        _log.LogMessage(MessageImportance.Low, "Another project is already restoring CBT modules.  Waiting for it to complete.");
                         releaseSemaphore = semaphore.WaitOne(TimeSpan.FromMinutes(30));
 
                         return releaseSemaphore;
@@ -137,6 +138,10 @@ namespace CBT.Core.Tasks
                             return false;
                         }
                     }
+                    else
+                    {
+                        _log.LogMessage(MessageImportance.Low, $"Restore command '{RestoreCommand}' already exists so it was not downloaded.");
+                    }
 
                     if (!RestorePackages())
                     {
@@ -145,7 +150,7 @@ namespace CBT.Core.Tasks
 
                     _log.LogMessage(MessageImportance.Low, "Create CBT module imports");
 
-                    ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(PackagesPath, PackageConfig);
+                    ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(_log, PackagesPath, PackageConfig);
 
                     if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, BeforeImports, AfterImports))
                     {
@@ -173,8 +178,31 @@ namespace CBT.Core.Tasks
 
         public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string packagesPath, string packagesFallbackPath, string restoreCommand, string restoreCommandArguments, string projectFullPath)
         {
-            if ((String.IsNullOrWhiteSpace(packagesPath) || Directory.Exists(packagesPath)) && IsFileUpToDate(importsFile, inputs))
+            BuildEngine = new CBTBuildEngine();
+
+            _log.LogMessage(MessageImportance.Low, "CBT Module Restore Properties:");
+            _log.LogMessage(MessageImportance.Low, $"  AfterImports = {String.Join(";", afterImports)}");
+            _log.LogMessage(MessageImportance.Low, $"  BeforeImports = {String.Join(";", beforeImports)}");
+            _log.LogMessage(MessageImportance.Low, $"  ExtensionsPath = {extensionsPath}");
+            _log.LogMessage(MessageImportance.Low, $"  ImportsFile = {importsFile}");
+            _log.LogMessage(MessageImportance.Low, $"  Inputs = {String.Join(";", inputs)}");
+            _log.LogMessage(MessageImportance.Low, $"  NuGetDownloaderArguments = {nuGetDownloaderArguments}");
+            _log.LogMessage(MessageImportance.Low, $"  NuGetDownloaderAssemblyPath = {nuGetDownloaderAssemblyPath}");
+            _log.LogMessage(MessageImportance.Low, $"  NuGetDownloaderClassName = {nuGetDownloaderClassName}");
+            _log.LogMessage(MessageImportance.Low, $"  PackageConfig = {packageConfig}");
+            _log.LogMessage(MessageImportance.Low, $"  PackagesFallbackPath = {packagesFallbackPath}");
+            _log.LogMessage(MessageImportance.Low, $"  PackagesPath = {packagesPath}");
+            _log.LogMessage(MessageImportance.Low, $"  ProjectFullPath = {projectFullPath}");
+            _log.LogMessage(MessageImportance.Low, $"  RestoreCommand = {restoreCommand}");
+            _log.LogMessage(MessageImportance.Low, $"  RestoreCommandArguments = {restoreCommandArguments}");
+
+            if (!String.IsNullOrWhiteSpace(packagesPath) && !Directory.Exists(packagesPath))
             {
+                _log.LogMessage(MessageImportance.Low, $"The path '{packagesPath}' does not exist so modules will be restored.");
+            }
+            else if (IsFileUpToDate(importsFile, inputs))
+            {
+                _log.LogMessage(MessageImportance.Low, $"Skipping module restoration because everything is up-to-date.");
                 return true;
             }
 
@@ -192,8 +220,6 @@ namespace CBT.Core.Tasks
             ProjectFullPath = projectFullPath;
             RestoreCommand = restoreCommand;
             RestoreCommandArguments = restoreCommandArguments;
-
-            BuildEngine = new CBTBuildEngine();
 
             Console.CancelKeyPress += (sender, args) =>
             {
@@ -215,21 +241,43 @@ namespace CBT.Core.Tasks
         /// <param name="outputs">The list of files to check against.</param>
         /// <returns><code>true</code> if the file does not exist or it is older than any of the other files.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="input"/> is <code>null</code>.</exception>
-        private static bool IsFileUpToDate(string input, params string[] outputs)
+        private bool IsFileUpToDate(string input, params string[] outputs)
         {
             if (String.IsNullOrWhiteSpace(input))
             {
                 throw new ArgumentNullException(nameof(input));
             }
 
-            if (!File.Exists(input) || outputs == null || outputs.Length == 0)
+            if (!File.Exists(input))
             {
+                _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because it does not exist.");
+                return false;
+            }
+            if (outputs == null || outputs.Length == 0)
+            {
+                _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because no outputs were specified.");
                 return false;
             }
 
-            long lastWriteTime = File.GetLastWriteTimeUtc(input).Ticks;
+            DateTime lastWriteTime = File.GetLastWriteTimeUtc(input);
 
-            return outputs.All(output => File.Exists(output) && File.GetLastWriteTimeUtc(output).Ticks <= lastWriteTime);
+            foreach (var output in outputs)
+            {
+                if (!File.Exists(output))
+                {
+                    _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because the output file '{output}' does not exist.");
+                    return false;
+                }
+
+                var outputLastWriteTime = File.GetLastWriteTimeUtc(output);
+
+                if (outputLastWriteTime.Ticks > lastWriteTime.Ticks)
+                {
+                    _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because the output file '{output}' is newer ({lastWriteTime:O} > {outputLastWriteTime:O}).");
+                    return false;
+                }
+            }
+            return true;
         }
 
         private async Task<bool> DownloadNuGet()
@@ -253,15 +301,19 @@ namespace CBT.Core.Tasks
                 Assembly assembly;
                 try
                 {
+                    _log.LogMessage(MessageImportance.Low, $"Loading NuGet downloader assembly from '{NuGetDownloaderAssemblyPath}'.");
                     assembly = Assembly.LoadFrom(NuGetDownloaderAssemblyPath);
                 }
                 catch (FileLoadException)
                 {
+                    _log.LogMessage(MessageImportance.Low, "NuGet downloader assembly failed to load, falling back to unsafe load.");
                     // FileLoadException can happen if the NuGet downloader assembly isn't trusted by the OS so as a fall back use UnsafeLoadFrom()
                     // to "bypass some security checks"
                     //
                     assembly = Assembly.UnsafeLoadFrom(NuGetDownloaderAssemblyPath);
                 }
+
+                _log.LogMessage(MessageImportance.Low, $"Getting NuGet downloader type '{NuGetDownloaderClassName}'.");
 
                 Type type = assembly.GetType(NuGetDownloaderClassName, throwOnError: true);
 
@@ -368,12 +420,12 @@ namespace CBT.Core.Tasks
                 return false;
             }
 
+            _log.LogMessage(MessageImportance.Low, $"Packages will be restored to '{PackagesPath}'");
+
             if (RestoreCommandArguments.IndexOf("-o", StringComparison.OrdinalIgnoreCase) < 0 && RestoreCommandArguments.IndexOf("-PackagesDirectory", StringComparison.OrdinalIgnoreCase) < 0)
             {
                 RestoreCommandArguments = $"{RestoreCommandArguments} -PackagesDirectory \"{PackagesPath}\"";
             }
-
-            _log.LogMessage(MessageImportance.Normal, $"{RestoreCommand} {RestoreCommandArguments}");
 
             using (ManualResetEvent processExited = new ManualResetEvent(false))
             using (Process process = new Process
@@ -411,7 +463,7 @@ namespace CBT.Core.Tasks
                 // ReSharper disable once AccessToDisposedClosure
                 process.Exited += (sender, args) => processExited.Set();
 
-                _log.LogMessage(MessageImportance.Low, "{0} {1}", process.StartInfo.FileName, process.StartInfo.Arguments);
+                _log.LogMessage(MessageImportance.Low, $"{process.StartInfo.FileName} {process.StartInfo.Arguments} (In '{process.StartInfo.WorkingDirectory}')");
 
                 if (!process.Start())
                 {
