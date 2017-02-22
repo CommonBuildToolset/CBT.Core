@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Microsoft.Build.Evaluation;
 using Microsoft.Build.Framework;
 
 namespace CBT.Core.Internal
@@ -14,11 +13,10 @@ namespace CBT.Core.Internal
     internal sealed class ModulePropertyGenerator
     {
         private readonly CBTTaskLogHelper _log;
-        internal const string ImportRelativePath = @"CBT\Module\$(MSBuildThisFile)";
-        internal const string ModuleConfigPath = @"CBT\Module\module.config";
-        internal const string PropertyNamePrefix = "CBTModule_";
-        internal const string PropertyValuePrefix = @"$(NuGetPackagesPath)\";
-        private readonly IList<INuGetPackageConfigParser> _configParsers;
+        internal static readonly string ImportRelativePath = Path.Combine("CBT", "Module", "$(MSBuildThisFile)");
+        internal static readonly string ModuleConfigPath = Path.Combine("CBT", "Module", "module.config");
+        internal static readonly string PropertyNamePrefix = "CBTModule_";
+        internal static readonly string PropertyValuePrefix = $"$(NuGetPackagesPath){Path.DirectorySeparatorChar}";
         private readonly IDictionary<string, PackageIdentityWithPath> _packages;
         private readonly string _packagesPath;
 
@@ -54,10 +52,9 @@ namespace CBT.Core.Internal
                 throw new ArgumentNullException(nameof(packageConfigPaths));
             }
 
-            _configParsers = configParsers;
             _packagesPath = packagesPath;
             _packages = packageConfigPaths
-                .SelectMany(i => _configParsers
+                .SelectMany(i => configParsers
                 .SelectMany(parser => parser.GetPackages(packagesPath, i)))
                 .ToDictionary(i => i.Id, i => i, StringComparer.OrdinalIgnoreCase);
         }
