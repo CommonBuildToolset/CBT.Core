@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "CBT.NuGet": "1.0.7-beta",
-    "CBT.Traversal": "1.0.1",
+    "CBT.NuGet": "1.0.35-dev-g82196a0016",
+    "CBT.Traversal": "1.0.31",
     "CBT.AssemblyInfo": "1.0.3-beta",
     "CBT.DotNetFx" : "4.5.0-beta02" 
   },
