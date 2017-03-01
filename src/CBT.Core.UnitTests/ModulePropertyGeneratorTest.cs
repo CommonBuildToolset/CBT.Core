@@ -44,6 +44,7 @@ namespace CBT.Core.UnitTests
             _packages = new List<PackageIdentity>
             {
                 new PackageIdentity("Package1", new NuGetVersion("1.0.0")),
+                new PackageIdentity("Package1", new NuGetVersion("2.0.0")),
                 new PackageIdentity("Package2.Thing", new NuGetVersion("2.5.1")),
                 new PackageIdentity("Package3.a.b.c.d.e.f", new NuGetVersion(10, 10, 9999, 9999, "beta99", "")),
             };
@@ -197,7 +198,7 @@ namespace CBT.Core.UnitTests
             foreach (Tuple<string, string> item in new[]
             {
                 new Tuple<string, string>("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)"),
-            }.Concat(_packages.Select(i =>
+            }.Concat(_packages.Reverse().Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase))).Select(i =>
                 new Tuple<string, string>(
                     $"{ModulePropertyGenerator.PropertyNamePrefix}{i.Id.Replace(".", "_")}",
                     $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}"))))
@@ -209,30 +210,19 @@ namespace CBT.Core.UnitTests
                 propertyElement.Value.ShouldBe(item.Item2);
             }
 
-            // Verify "before" imports
-            //
-            for (int i = 0; i < importsBefore.Length; i++)
+            List<string> expectedImports = importsBefore
+                                                  .Concat(_packages.Select(i => $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}\\{ModulePropertyGenerator.ImportRelativePath}"))
+                                                  .Concat(importsAfter).ToList();
+
+            List<ProjectImportElement> actualImports = project.Imports.ToList();
+
+            project.Imports.Count.ShouldBe(expectedImports.Count);
+
+            for (int i = 0; i < expectedImports.Count; i++)
             {
-                ProjectImportElement import = project.Imports.Skip(i).FirstOrDefault();
+                actualImports[i].Project.ShouldBe(expectedImports[i]);
 
-                import.ShouldNotBeNull();
-
-                import.Project.ShouldBe(importsBefore[i]);
-
-                import.Condition.ShouldBe($" Exists('{importsBefore[i]}') ");
-            }
-
-            // Verify "after" imports
-            //
-            for (int i = 0; i < importsAfter.Length; i++)
-            {
-                ProjectImportElement import = project.Imports.Skip((project.Imports.Count - importsAfter.Length) + i).FirstOrDefault();
-
-                import.ShouldNotBeNull();
-
-                import.Project.ShouldBe(importsAfter[i]);
-
-                import.Condition.ShouldBe($" Exists('{importsAfter[i]}') ");
+                actualImports[i].Condition.ShouldBe($" Exists('{expectedImports[i]}') ");
             }
 
             // Verify module extensions were created
@@ -251,14 +241,14 @@ namespace CBT.Core.UnitTests
 
                 for (int i = 0; i < _packages.Count; i++)
                 {
-                    string importProject = $"$({ModulePropertyGenerator.PropertyNamePrefix}{_packages[i].Id.Replace(".", "_")})\\{ModulePropertyGenerator.ImportRelativePath}";
+                    string importProject = $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(_packages[i])}\\{ModulePropertyGenerator.ImportRelativePath}";
                     ProjectImportElement import = extensionProject.Imports.Skip(i).FirstOrDefault();
 
                     import.ShouldNotBeNull();
 
                     import.Project.ShouldBe(importProject);
 
-                    import.Condition.ShouldBe($"Exists('{importProject}')");
+                    import.Condition.ShouldBe($" Exists('{importProject}') ");
                 }
             }
         }

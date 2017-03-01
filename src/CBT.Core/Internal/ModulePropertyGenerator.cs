@@ -1,4 +1,5 @@
 ﻿using Microsoft.Build.Construction;
+using Microsoft.Build.Framework;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,17 +7,16 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Microsoft.Build.Framework;
 
 namespace CBT.Core.Internal
 {
     internal sealed class ModulePropertyGenerator
     {
-        private readonly CBTTaskLogHelper _log;
         internal static readonly string ImportRelativePath = Path.Combine("CBT", "Module", "$(MSBuildThisFile)");
         internal static readonly string ModuleConfigPath = Path.Combine("CBT", "Module", "module.config");
         internal static readonly string PropertyNamePrefix = "CBTModule_";
         internal static readonly string PropertyValuePrefix = $"$(NuGetPackagesPath){Path.DirectorySeparatorChar}";
+        private readonly CBTTaskLogHelper _log;
         private readonly IDictionary<string, PackageIdentityWithPath> _packages;
         private readonly string _packagesPath;
 
@@ -56,7 +56,7 @@ namespace CBT.Core.Internal
             _packages = packageConfigPaths
                 .SelectMany(i => configParsers
                 .SelectMany(parser => parser.GetPackages(packagesPath, i)))
-                .ToDictionary(i => i.Id, i => i, StringComparer.OrdinalIgnoreCase);
+                .ToDictionary(i => $"{i.Id}.{i.Version}", i => i, StringComparer.OrdinalIgnoreCase);
         }
 
         public bool Generate(string outputPath, string extensionsPath, string[] beforeModuleImports, string[] afterModuleImports)
@@ -68,7 +68,7 @@ namespace CBT.Core.Internal
             }
             ProjectRootElement project = CreateProjectWithNuGetProperties();
 
-            List<string> properties = project.Properties.Where(i => i.Name.StartsWith(PropertyNamePrefix)).Select(i => $"$({i.Name})").ToList();
+            List<string> modulePaths = _packages.Values.Select(i => Path.Combine(PropertyValuePrefix, i.Path)).ToList();
 
             if (beforeModuleImports != null)
             {
@@ -78,7 +78,7 @@ namespace CBT.Core.Internal
                 }
             }
 
-            AddImports(project, properties);
+            AddImports(project, modulePaths);
 
             if (afterModuleImports != null)
             {
@@ -96,7 +96,7 @@ namespace CBT.Core.Internal
             {
                 ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, item));
 
-                AddImports(extensionProject, properties);
+                AddImports(extensionProject, modulePaths);
 
                 _log.LogMessage(MessageImportance.Low, $"Saving import file '{extensionProject.FullPath}'.");
 
@@ -110,7 +110,7 @@ namespace CBT.Core.Internal
         {
             foreach (ProjectImportElement import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(modulePath => project.AddImport(Path.Combine(modulePath, ImportRelativePath))))
             {
-                import.Condition = $"Exists('{import.Project}')";
+                import.Condition = $" Exists('{import.Project}') ";
             }
         }
 
