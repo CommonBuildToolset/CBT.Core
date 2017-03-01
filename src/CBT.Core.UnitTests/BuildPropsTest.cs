@@ -94,7 +94,7 @@ namespace CBT.Core.UnitTests
 
             target.Inputs.ShouldBe("$(CBTModuleRestoreInputs)");
 
-            target.Outputs.ShouldBe("$(CBTModulePropertiesFile)");
+            target.Outputs.ShouldBe("$([MSBuild]::ValueOrDefault($(CBTModulePropertiesFile), 'null')");
 
             var task = target.Tasks.FirstOrDefault(i => i.Name.Equals("RestoreModules"));
 
