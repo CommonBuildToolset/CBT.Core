@@ -130,15 +130,26 @@ namespace CBT.Core.Internal
         {
             if (_logBuildEventHandler == null)
             {
-                // Write to the console if reflection fails to get the delegate needed
-                //
                 if (buildEventArgs is BuildErrorEventArgs)
                 {
+                    // Send errors to StdErr
+                    //
                     Console.Error.WriteLine(buildEventArgs.Message);
                 }
                 else
                 {
-                    Console.Out.WriteLine(buildEventArgs.Message);
+                    BuildMessageEventArgs buildMessageEventArgs = buildEventArgs as BuildMessageEventArgs;
+
+                    // Only send high importance messages to the console
+                    //
+                    if (buildMessageEventArgs?.Importance == MessageImportance.High)
+                    {
+                        Console.Out.WriteLine(buildMessageEventArgs.Message);
+                    }
+                    else
+                    {
+                        Trace.TraceInformation(buildEventArgs.Message);
+                    }
                 }
             }
             else
