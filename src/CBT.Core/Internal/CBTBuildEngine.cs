@@ -28,14 +28,23 @@ namespace CBT.Core.Internal
             //
             BuildManager buildManager = BuildManager.DefaultBuildManager;
 
-            PropertyInfo loggingServiceProperty = buildManager.GetType().GetProperty("Microsoft.Build.BackEnd.IBuildComponentHost.LoggingService", BindingFlags.Instance | BindingFlags.NonPublic);
+            PropertyInfo loggingServiceProperty = buildManager?.GetType().GetProperty("Microsoft.Build.BackEnd.IBuildComponentHost.LoggingService", BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (loggingServiceProperty != null)
             {
                 try
                 {
-                    object loggingService = loggingServiceProperty.GetMethod.Invoke(buildManager, null);
+                    object loggingService = null;
 
+                    try
+                    {
+                        loggingService = loggingServiceProperty.GetMethod.Invoke(buildManager, null);
+                    }
+                    catch (TargetInvocationException e) when(e.InnerException is NullReferenceException)
+                    {
+                        // When a build is not taking place, there is no logging service.  The LoggingService property attempts to cast which throws a NullReferenceException so this is ignored.
+                    }
+                
                     MethodInfo logBuildEventMethod = loggingService?.GetType().GetMethod("LogBuildEvent", new[] {typeof (BuildEventArgs)});
 
                     if (logBuildEventMethod != null)
