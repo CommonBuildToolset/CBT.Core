@@ -43,7 +43,7 @@ namespace CBT.Core.UnitTests
                 {"CBTModuleRestoreCommand", null},
                 {"CBTModuleRestoreCommandArguments", null},
                 {"CBTModuleRestoreInputs", null},
-                {"CBTModulesRestored", " '$(BuildingInsideVisualStudio)' != 'true' And '$({0})' != 'true' And Exists('$(CBTCoreAssemblyPath)') "}
+                {"CBTModulesRestored", " '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$({0})' != 'true' And Exists('$(CBTCoreAssemblyPath)') "}
             };
 
             foreach (var knownProperty in knownProperties)
@@ -90,7 +90,7 @@ namespace CBT.Core.UnitTests
 
             target.ShouldNotBe(null);
 
-            target.Condition.ShouldBe(" '$(CBTModulesRestored)' != 'true' ");
+            target.Condition.ShouldBe(" '$(RestoreCBTModules)' != false And '$(CBTModulesRestored)' != 'true' ");
 
             target.Inputs.ShouldBe("$(CBTModuleRestoreInputs)");
 
