@@ -88,7 +88,7 @@
   <Target Name="RestoreCBTModules"
       Condition=" '$(RestoreCBTModules)' != false And '$(CBTModulesRestored)' != 'true' "
       Inputs="$(CBTModuleRestoreInputs)"
-      Outputs="$([MSBuild]::ValueOrDefault($(CBTModulePropertiesFile), 'null')">
+      Outputs="$([MSBuild]::ValueOrDefault($(CBTModulePropertiesFile), 'null'))">
 
     <Error Condition=" '$(EnlistmentRoot)' == '' " Text="The 'EnlistmentRoot' property must be set.  Please ensure it is declared in a properties file before CBT Core is imported." Code="CBT1000" />
     
