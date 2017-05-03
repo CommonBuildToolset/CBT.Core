@@ -85,7 +85,7 @@
     <CBTParseError Condition=" '$(EnlistmentRoot)' == '' " Include="The 'EnlistmentRoot' property must be set.  Please ensure it is declared in a properties file before CBT Core is imported.">
       <Code>CBT1000</Code>
     </CBTParseError>
-    <CBTParseError Condition=" '$(CBTModulesRestored)' != 'true' " Include="Modules were not restored and the build cannot continue.  Refer to other errors for more information.">
+    <CBTParseError Condition=" '$(CBTModulesRestored)' == 'false' " Include="Modules were not restored and the build cannot continue.  Refer to other errors for more information.">
       <Code>CBT1001</Code>
     </CBTParseError>
     <CBTParseError Condition=" '$(CBTModulePackageConfigPath)' == '' " Include="The 'CBTModulePackageConfigPath' is not set or no package configuration file was found in the expected location.  You must have a packages.config or project.json file that specifies what modules to use.">

@@ -81,16 +81,82 @@ namespace CBT.Core.UnitTests
         }
 
         [Test]
+        [Description("Verifies that required Items exist in the build.props file.")]
+        public void RequiredItemsTest()
+        {
+            ICollection<Items> items = new List<Items>();
+            items.Add(new Items {
+                ItemType = "CBTParseError",
+                Include = "The 'EnlistmentRoot' property must be set.  Please ensure it is declared in a properties file before CBT Core is imported.",
+                Condition = " '$(EnlistmentRoot)' == '' ",
+                Metadata = new List<NameValueCondition>()
+                {
+                  new NameValueCondition { Name="Code", Value="CBT1000", Condition = string.Empty }
+                }
+            });
+            items.Add(new Items
+            {
+                ItemType = "CBTParseError",
+                Include = "Modules were not restored and the build cannot continue.  Refer to other errors for more information.",
+                Condition = " '$(CBTModulesRestored)' == 'false' ",
+                Metadata = new List<NameValueCondition>()
+                {
+                  new NameValueCondition { Name="Code", Value="CBT1001", Condition = string.Empty }
+                }
+            });
+            items.Add(new Items
+            {
+                ItemType = "CBTParseError",
+                Include = "The 'CBTModulePackageConfigPath' is not set or no package configuration file was found in the expected location.  You must have a packages.config or project.json file that specifies what modules to use.",
+                Condition = " '$(CBTModulePackageConfigPath)' == '' ",
+                Metadata = new List<NameValueCondition>()
+                {
+                  new NameValueCondition { Name="Code", Value="CBT1002", Condition = string.Empty }
+                }
+            });
+            ItemShouldBe(items);
+        }
+
+        [Test]
+        [Description("Verifies intialTargets are properly defined.")]
+        public void InitialTargetsTest()
+        {
+            _project.InitialTargets.ShouldBe("ShowCBTParseErrors;RestoreCBTModules");
+        }
+
+        [Test]
+        [Description("Verifies that the ShowCBTParseErrors target and Error task are properly defined.")]
+        public void ShowCBTParseErrorsTargetTest()
+        {
+
+            var target = _project.Targets.FirstOrDefault(i => i.Name.Equals("ShowCBTParseErrors", StringComparison.OrdinalIgnoreCase));
+            target.ShouldNotBe(null);
+            target.Condition.ShouldBe(" '@(CBTParseError)' != '' ");
+            target.Inputs.ShouldBe("");
+            target.Outputs.ShouldBe("");
+
+            var task = target.Tasks.FirstOrDefault(i => i.Name.Equals("Error"));
+
+            task.ShouldNotBe(null);
+
+            task.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                {"Text", "%(CBTParseError.Identity)"},
+                {"Code", "%(CBTParseError.Code)"}
+            });
+
+        }
+
+        [Test]
         [Description("Verifies that the RestoreCBTModules target and RestoreModules task are properly defined.")]
         public void RestoreCBTModulesTargetTest()
         {
-            _project.InitialTargets.ShouldBe("RestoreCBTModules");
 
             var target = _project.Targets.FirstOrDefault(i => i.Name.Equals("RestoreCBTModules", StringComparison.OrdinalIgnoreCase));
 
             target.ShouldNotBe(null);
 
-            target.Condition.ShouldBe(" '$(RestoreCBTModules)' != false And '$(CBTModulesRestored)' != 'true' ");
+            target.Condition.ShouldBe(" '$(RestoreCBTModules)' != 'false' And '$(CBTModulesRestored)' != 'true' ");
 
             target.Inputs.ShouldBe("$(CBTModuleRestoreInputs)");
 
@@ -143,7 +209,7 @@ namespace CBT.Core.UnitTests
         public void ImportsTest()
         {
             var beforeImport = _project.Imports.FirstOrDefault(i => i.Project.Equals(@"$(CBTLocalBuildExtensionsPath)\Before.$(MSBuildThisFile)", StringComparison.OrdinalIgnoreCase));
-            
+
             beforeImport.ShouldNotBe(null);
 
             beforeImport.Condition.ShouldBe(@" '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\Before.$(MSBuildThisFile)') ");
@@ -181,5 +247,55 @@ namespace CBT.Core.UnitTests
 
             property.Value.ShouldBe(value, stringCompareShould);
         }
+
+        private void ItemShouldBe( IEnumerable<Items> items, StringCompareShould stringCompareShould = StringCompareShould.IgnoreCase)
+        {
+            var valItemEnumerator = items.GetEnumerator();
+            valItemEnumerator.MoveNext();
+            foreach (var item in _project.Items)
+            {
+                var valItem = valItemEnumerator.Current;
+                valItem.ShouldNotBe(null);
+                if (item.ItemType.Equals(valItem.ItemType))
+                {
+                    item.Condition.ShouldBe(valItem.Condition, stringCompareShould);
+                    item.Include.ShouldBe(valItem.Include, stringCompareShould);
+                    MetadataShouldBe(valItem.Metadata, item);
+                    valItemEnumerator.MoveNext();
+                }
+            }
+            valItemEnumerator.Current.ShouldBe(null);
+        }
+
+        private void MetadataShouldBe(IEnumerable<NameValueCondition> metadata, ProjectItemElement item, StringCompareShould stringCompareShould = StringCompareShould.IgnoreCase)
+        {
+            var valMetadataEnumerator = metadata.GetEnumerator();
+            valMetadataEnumerator.MoveNext();
+            foreach (var meta in item.Metadata)
+            {
+                var valMeta = valMetadataEnumerator.Current;
+                valMeta.ShouldNotBe(null);
+                meta.Name.ShouldBe(valMeta.Name);
+                meta.Condition.ShouldBe(valMeta.Condition, stringCompareShould);
+                meta.Value.ShouldBe(valMeta.Value, stringCompareShould);
+                valMetadataEnumerator.MoveNext();
+            }
+            valMetadataEnumerator.Current.ShouldBe(null);
+        }
+    }
+
+    class NameValueCondition
+    {
+        internal string Name { get; set; }
+        internal string Value { get; set; }
+        internal string Condition { get; set; }
+    }
+
+    class Items
+    {
+        internal string ItemType { get; set; }
+        internal string Include { get; set; }
+        internal string Condition { get; set; }
+        internal IEnumerable<NameValueCondition> Metadata { get; set; }
     }
 }
