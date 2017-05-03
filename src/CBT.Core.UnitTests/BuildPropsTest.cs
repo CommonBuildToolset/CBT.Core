@@ -107,7 +107,7 @@ namespace CBT.Core.UnitTests
             items.Add(new Items
             {
                 ItemType = "CBTParseError",
-                Include = "The 'CBTModulePackageConfigPath' is not set or no package configuration file was found in the expected location.  You must have a packages.config or project.json file that specifies what modules to use.",
+                Include = "The CBT modules packages.config or project.json file was not found under $(CBTLocalPath) or $(CBTLocalPath)\\CBTModules.  Please add a cbt modules packages file or set the property 'CBTModulePackageConfigPath' to a custom module packages file.",
                 Condition = " '$(CBTModulePackageConfigPath)' == '' ",
                 Metadata = new List<NameValueCondition>()
                 {
