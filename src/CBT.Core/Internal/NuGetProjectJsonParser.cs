@@ -1,5 +1,4 @@
 ﻿using NuGet.Common;
-using NuGet.Logging;
 using NuGet.Packaging;
 using NuGet.ProjectModel;
 using System.Collections.Generic;

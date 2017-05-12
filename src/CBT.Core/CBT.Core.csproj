@@ -10,6 +10,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
+    <Reference Include="Microsoft.Build, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.Build.Framework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="System" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
@@ -33,13 +35,9 @@
       <Link>build.props</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="ILMerge.targets" />
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="MarkNuGetReferencesAsNotCopyLocal" AfterTargets="ResolveNuGetPackageAssets">
-    <!-- Remove NuGet assembly references from the list of things to copy.  The dependencies will be resolved at runtime instead -->
-    <ItemGroup>
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition=" '%(ReferenceCopyLocalPaths.NuGetSourceType)' == 'Package' " />
-    </ItemGroup>
-  </Target>
+  <Import Project="$(MSBuildProjectDirectory)\ILMerge.targets" />
 </Project>
