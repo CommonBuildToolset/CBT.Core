@@ -139,7 +139,6 @@ namespace CBT.Core.UnitTests
             new LockFileFormat().Write(_projectLockFilePath, new LockFile
             {
                 Version = 1,
-                IsLocked = false,
                 Libraries = _packages.Select(i => new LockFileLibrary
                 {
                     Name = i.Id,
@@ -207,7 +206,7 @@ namespace CBT.Core.UnitTests
 
                 propertyElement.ShouldNotBeNull();
 
-                propertyElement.Value.ShouldBe(item.Item2);
+                propertyElement.Value.ShouldBe(item.Item2, StringCompareShould.IgnoreCase);
             }
 
             List<string> expectedImports = importsBefore
@@ -220,9 +219,9 @@ namespace CBT.Core.UnitTests
 
             for (int i = 0; i < expectedImports.Count; i++)
             {
-                actualImports[i].Project.ShouldBe(expectedImports[i]);
+                actualImports[i].Project.ShouldBe(expectedImports[i], StringCompareShould.IgnoreCase);
 
-                actualImports[i].Condition.ShouldBe($" Exists('{expectedImports[i]}') ");
+                actualImports[i].Condition.ShouldBe($" Exists('{expectedImports[i]}') ", StringCompareShould.IgnoreCase);
             }
 
             // Verify module extensions were created
@@ -246,9 +245,9 @@ namespace CBT.Core.UnitTests
 
                     import.ShouldNotBeNull();
 
-                    import.Project.ShouldBe(importProject);
+                    import.Project.ShouldBe(importProject, StringCompareShould.IgnoreCase);
 
-                    import.Condition.ShouldBe($" Exists('{importProject}') ");
+                    import.Condition.ShouldBe($" Exists('{importProject}') ", StringCompareShould.IgnoreCase);
                 }
             }
         }

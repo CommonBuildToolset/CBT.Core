@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ILMergeIntermediateOutputPath>$(IntermediateOutputPath)Merged\</ILMergeIntermediateOutputPath>
+    <ILMergeIntermediateAssembly>$(ILMergeIntermediateOutputPath)$(TargetName)$(TargetExt)</ILMergeIntermediateAssembly>
+    <ILMergeIntermediateDebugSymbolsFile>$(ILMergeIntermediateOutputPath)$(TargetName).pdb</ILMergeIntermediateDebugSymbolsFile>
+    <ILMergeOutputPath>$(OutputPath)Merged\</ILMergeOutputPath>
+  </PropertyGroup>
+
+  <Target Name="PrepareForILMerge"
+          DependsOnTargets="ResolveNuGetPackageAssets">
+    <ItemGroup>
+      <ILMergeAssemblies Include="@(_ReferencesFromNuGetPackages)" Condition=" '%(_ReferencesFromNuGetPackages.NuGetSourceType)' == 'Package' And '%(_ReferencesFromNuGetPackages.NuGetIsFrameworkReference)' != 'true' " />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ILMerge"
+          AfterTargets="CoreCompile"
+          DependsOnTargets="PrepareForILMerge"
+          Inputs="@(IntermediateAssembly);@(ILMergeAssemblies)"
+          Outputs="$(ILMergeIntermediateAssembly);$(ILMergeIntermediateDebugSymbolsFile)">
+    <MakeDir Directories="$(ILMergeIntermediateOutputPath)" />
+    <Exec Command="&quot;$(CBTLocalBuildExtensionsPath)\ILMerge.exe&quot; /internalize /out:&quot;$(ILMergeIntermediateAssembly)&quot; &quot;@(IntermediateAssembly)&quot; &quot;@(ILMergeAssemblies, '&quot; &quot;')&quot;" />
+    <ItemGroup>
+      <FileWrites Include="$(ILMergeIntermediateAssembly)" />
+    </ItemGroup>
+
+  </Target>
+
+  <Target Name="CopyILMergedFilesToOutputDirectory" AfterTargets="CopyFilesToOutputDirectory">
+
+    <MakeDir Directories="$(ILMergeOutputPath)" />
+
+    <!--Copy the merged assembly-->
+    <Copy
+      SourceFiles="$(ILMergeIntermediateAssembly)"
+      DestinationFolder="$(ILMergeOutputPath)"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)"
+      Condition="'$(CopyBuildOutputToOutputDirectory)' == 'true' and '$(SkipCopyBuildProduct)' != 'true'">
+
+      <Output TaskParameter="DestinationFiles" ItemName="ILMergeAssembly"/>
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+
+    </Copy>
+
+    <Message Importance="High" Text="$(MSBuildProjectName) -&gt; @(ILMergeAssembly->'%(FullPath)')" Condition="'$(CopyBuildOutputToOutputDirectory)' == 'true' and '$(SkipCopyBuildProduct)'!='true'" />
+
+    <!--Copy the debug information file (.pdb), if any-->
+    <Copy
+      SourceFiles="$(ILMergeIntermediateDebugSymbolsFile)"
+      DestinationFolder="$(ILMergeOutputPath)"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)"
+      Condition="'$(_DebugSymbolsProduced)'=='true' and '$(SkipCopyingSymbolsToOutputDirectory)' != 'true' and '$(CopyOutputSymbolsToOutputDirectory)'=='true'">
+
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+
+    </Copy>
+  </Target>
+</Project>

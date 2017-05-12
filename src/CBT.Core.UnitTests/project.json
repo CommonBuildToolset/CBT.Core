@@ -1,6 +1,5 @@
 ﻿{
   "dependencies": {
-    "Microsoft.Build": "14.3.0",
     "NUnit": {
       "version": "3.2.1",
       "suppressParent": "none"

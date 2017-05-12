@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,24 +25,6 @@ namespace CBT.Core.Tasks
 
         public RestoreModules()
         {
-            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-            {
-                if (Regex.IsMatch(args.Name, @"NuGet[^,]+, Version=[\d\.]+, Culture=[^,]+, PublicKeyToken=31bf3856ad364e35"))
-                {
-                    try
-                    {
-                        return Assembly.LoadFrom(RestoreCommand);
-                    }
-                    catch (FileLoadException)
-                    {
-                        // Fall back to UnsafeLoadFrom() to "bypass some security checks"
-                        //
-                        Assembly.UnsafeLoadFrom(RestoreCommand);
-                    }
-                }
-                return null;
-            };
-
             _log = new CBTTaskLogHelper(this);
         }
 
