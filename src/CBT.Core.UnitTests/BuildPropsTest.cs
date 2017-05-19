@@ -218,7 +218,7 @@ namespace CBT.Core.UnitTests
 
             target.ShouldNotBe(null);
 
-            target.Condition.ShouldBe(@" '$(ExcludeRestorePackageImports)' == 'true' ");
+            target.Condition.ShouldBe(@" '$(ExcludeRestorePackageImports)' == 'true' And '$(RestoreOutputAbsolutePath)' != '' ");
 
             target.Inputs.ShouldBe(string.Empty);
 

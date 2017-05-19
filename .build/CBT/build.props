@@ -134,7 +134,7 @@
 
   </Target>
 
-  <Target Name="GenerateModuleAssetFlagFile" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(ExcludeRestorePackageImports)' == 'true' " >
+  <Target Name="GenerateModuleAssetFlagFile" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(ExcludeRestorePackageImports)' == 'true' And '$(RestoreOutputAbsolutePath)' != '' " >
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(CBTModuleNuGetAssetsFlagFile)))" />
     <WriteLinesToFile File="$(CBTModuleNuGetAssetsFlagFile)" Lines="$(RestoreOutputAbsolutePath)" Overwrite="true"/>
   </Target>
