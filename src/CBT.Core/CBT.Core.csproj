@@ -24,6 +24,7 @@
     <Compile Include="Internal\INuGetSettingsHelper.cs" />
     <Compile Include="Internal\ModulePropertyGenerator.cs" />
     <Compile Include="Internal\NuGetPackagesConfigParser.cs" />
+    <Compile Include="Internal\NuGetPackageReferenceProjectParser.cs" />
     <Compile Include="Internal\NuGetProjectJsonParser.cs" />
     <Compile Include="Internal\NuGetSettingsHelper.cs" />
     <Compile Include="Internal\PackageIdentityWithPath.cs" />
@@ -34,6 +35,7 @@
     <None Include="$(CBTGlobalPath)\build.props">
       <Link>build.props</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </None>
     <None Include="ILMerge.targets" />
     <None Include="project.json" />

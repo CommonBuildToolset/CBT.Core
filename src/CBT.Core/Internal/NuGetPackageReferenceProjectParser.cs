@@ -1,6 +1,7 @@
 ﻿using NuGet.Common;
 using NuGet.Packaging;
 using NuGet.ProjectModel;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -9,18 +10,18 @@ namespace CBT.Core.Internal
     /// <summary>
     /// Represents a class that can parse a NuGet project.json file.
     /// </summary>
-    internal sealed class NuGetProjectJsonParser : INuGetPackageConfigParser
+    internal sealed class NuGetPackageReferenceProjectParser : INuGetPackageConfigParser
     {
         public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, string assetsFileDirectory)
         {
-            VersionFolderPathResolver versionFolderPathResolver = new VersionFolderPathResolver(packagesPath);
-
-            if (!ProjectJsonPathUtilities.IsProjectConfig(packageConfigPath))
+            // This assumes that if it is a non packages.config or project.json being restored that it is a msbuild project using the new PackageReference.  
+            if (string.IsNullOrWhiteSpace(assetsFileDirectory) || ProjectJsonPathUtilities.IsProjectConfig(packageConfigPath) || packageConfigPath.EndsWith(NuGet.ProjectManagement.Constants.PackageReferenceFile, StringComparison.OrdinalIgnoreCase))
             {
                 yield break;
             }
-
-            string lockFilePath = ProjectJsonPathUtilities.GetLockFilePath(packageConfigPath);
+            VersionFolderPathResolver versionFolderPathResolver = new VersionFolderPathResolver(packagesPath);
+            
+            string lockFilePath = Path.Combine(assetsFileDirectory, LockFileFormat.AssetsFileName);
 
             if (!File.Exists(lockFilePath))
             {

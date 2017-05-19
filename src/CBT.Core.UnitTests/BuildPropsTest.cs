@@ -26,58 +26,59 @@ namespace CBT.Core.UnitTests
         [Description("Verifies that required properties exist in the build.props file.")]
         public void RequiredPropertiesTest()
         {
-            IDictionary<string, string> knownProperties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            string defaultCondition = " '$({0})' == '' ";
+            List<Property> knownProperties = new List<Property>()
             {
-                {"CBTCoreAssemblyPath", null},
-                {"CBTIntermediateOutputPath", null},
-                {"CBTModulePackageConfigPath", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\project.json') "},
-                {"CBTModulePath", null},
-                {"CBTModulePropertiesFile", null},
-                {"CBTModuleExtensionsPath", null},
-                {"CBTModuleImportsBefore", null},
-                {"CBTModuleImportsAfter", null},
-                {"CBTNuGetBinDir", null },
-                {"CBTNuGetDownloaderAssemblyPath",  null},
-                {"CBTNuGetDownloaderClassName", null },
-                {"CBTModuleRestoreTaskName", null},
-                {"CBTModuleRestoreCommand", null},
-                {"CBTModuleRestoreCommandArguments", null},
-                {"CBTModuleRestoreInputs", null},
-                {"CBTModulesRestored", " '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$({0})' != 'true' And Exists('$(CBTCoreAssemblyPath)') "}
+                {new Property("MSBuildAllProjects", @"$(MSBuildAllProjects);$(MSBuildThisFileFullPath)", string.Empty)},
+                {new Property("EnlistmentRoot", @"$({0}.TrimEnd('\\'))", " '$({0})' != '' ")},
+                {new Property("CBTGlobalPath", @"$(MSBuildThisFileDirectory)", defaultCondition)},
+                {new Property("CBTGlobalPath", @"$(CBTGlobalPath.TrimEnd('\\'))", string.Empty)},
+                {new Property("CBTLocalPath", @"$([System.IO.Path]::GetDirectoryName($(CBTGlobalPath)))\Local", @" '$({0})' == '' And Exists('$([System.IO.Path]::GetDirectoryName($(CBTGlobalPath)))\Local') ")},
+                {new Property("CBTLocalPath", @"$(CBTLocalPath.TrimEnd('\\'))", string.Empty)},
+                {new Property("CBTLocalBuildExtensionsPath", @"$(CBTLocalPath)\Extensions", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\Extensions') ")},
+                {new Property("Configuration", @"$(DefaultProjectConfiguration)", @" '$({0})' == '' And '$(DefaultProjectConfiguration)' != '' ")},
+                {new Property("Platform", @"$(DefaultProjectPlatform)", @" '$({0})' == '' And '$(DefaultProjectPlatform)' != '' ")},
+                {new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'CBTModules.proj'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\CBTModules.proj') ")},
+                {new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules.proj'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules.proj') ")},
+                {new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'project.json'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\project.json') ")},
+                {new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'project.json'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\project.json') ")},
+                {new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'packages.config'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\packages.config') ")},
+                {new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'packages.config'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\packages.config') ")},
+                {new Property("CBTPackagesFallbackPath", @"$([System.IO.Path]::Combine($(SolutionDir), 'packages'))", @" '$({0})' == '' And '$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*' And Exists('$(SolutionDir)')")},
+                {new Property("CBTPackagesFallbackPath", @"$([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($(MSBuildProjectDirectory))), 'packages'))", defaultCondition)},
+                {new Property("CBTCoreAssemblyPath", @"$(MSBuildThisFileDirectory)CBT.Core.dll", defaultCondition)},
+                {new Property("CBTModuleRestoreInputs", @"$(MSBuildThisFileFullPath);$(CBTCoreAssemblyPath);$(CBTModulePackageConfigPath)", defaultCondition)},
+                {new Property("CBTIntermediateOutputPath", @"$(MSBuildThisFileDirectory)obj", defaultCondition)},
+                {new Property("CBTModulePath", @"$(CBTIntermediateOutputPath)\Modules", defaultCondition)},
+                {new Property("CBTModulePropertiesFile", @"$(CBTModulePath)\$(MSBuildThisFile)", defaultCondition)},
+                {new Property("CBTModuleExtensionsPath", @"$(CBTModulePath)\Extensions", defaultCondition)},
+                {new Property("CBTModuleImportsBefore", @"%24(CBTLocalBuildExtensionsPath)\%24(MSBuildThisFile)", defaultCondition)},
+                {new Property("CBTModuleImportsAfter", string.Empty, defaultCondition)},
+                {new Property("CBTNuGetBinDir", @"$(CBTIntermediateOutputPath)\NuGet", defaultCondition)},
+                {new Property("CBTNuGetDownloaderAssemblyPath", @"$(CBTCoreAssemblyPath)", defaultCondition)},
+                {new Property("CBTNuGetDownloaderClassName", @"CBT.Core.Internal.DefaultNuGetDownloader", defaultCondition)},
+                {new Property("CBTModuleRestoreTaskName", @"CBT.Core.Tasks.RestoreModules", defaultCondition)},
+                {new Property("CBTModuleRestoreCommand", @"$(CBTNuGetBinDir)\NuGet.exe", defaultCondition)},
+                {new Property("CBTModuleRestoreCommandArguments", @"restore ""$(CBTModulePackageConfigPath)"" -NonInteractive", defaultCondition)},
+                {new Property("CBTModuleNugetAssetsFlagFile", @"$(CBTIntermediateOutputPath)\AssetsLockFilePath.flag", defaultCondition)},
+                {new Property("CBTModulesRestored", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTPackagesFallbackPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath), $(CBTModuleNugetAssetsFlagFile)))", @" '$(ExcludeRestorePackageImports)' != 'true' And '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ")},
             };
-
+            var propertiesToScan = _project.Properties.Where(p => p.Parent.Parent is ProjectRootElement);
+            var propertiesEnumerator = propertiesToScan.GetEnumerator();
             foreach (var knownProperty in knownProperties)
             {
-                var property = _project.Properties.FirstOrDefault(i => i.Name.Equals(knownProperty.Key, StringComparison.OrdinalIgnoreCase));
-
+                propertiesEnumerator.MoveNext();
+                var property = propertiesEnumerator.Current as ProjectPropertyElement;
                 property.ShouldNotBe(null);
 
-                property.Condition.ShouldBe(String.Format(knownProperty.Value ?? " '$({0})' == '' ", property.Name));
+                property.Name.ShouldBe(knownProperty.Name,StringCompareShould.IgnoreCase);
+
+                property.Condition.ShouldBe(String.Format(knownProperty.Condition, property.Name), $"Property {property.Name} condition is not as expected.");
+                property.Value.ShouldBe(String.Format(knownProperty.Value, property.Name), $"Property {property.Name} value is not as expected.");
             }
+            propertiesEnumerator.Dispose();
+            knownProperties.Count.ShouldBe(propertiesToScan.Count(),$"Expecting properites under ProjectRootElement and actual properties differ. ");
 
-            PropertyShouldBe("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)");
-            PropertyShouldBe("EnlistmentRoot", @"$(EnlistmentRoot.TrimEnd('\\'))");
-            PropertyShouldBe("CBTNuGetBinDir", @"$(CBTIntermediateOutputPath)\NuGet");
-            PropertyShouldBe("CBTNuGetDownloaderAssemblyPath", "$(CBTCoreAssemblyPath)");
-            PropertyShouldBe("CBTNuGetDownloaderClassName", "CBT.Core.Internal.DefaultNuGetDownloader");
-
-            var globalPathProperty = _project.Properties.Where(i => i.Name.Equals("CBTGlobalPath")).ToList();
-            globalPathProperty.Count.ShouldBe(2);
-            globalPathProperty[0].Condition.ShouldBe($" '$({globalPathProperty[0].Name})' == '' ", StringCompareShould.IgnoreCase);
-            globalPathProperty[0].Value.ShouldBe("$(MSBuildThisFileDirectory)", StringCompareShould.IgnoreCase);
-            globalPathProperty[1].Value.ShouldBe($@"$({globalPathProperty[0].Name}.TrimEnd('\\'))", StringCompareShould.IgnoreCase);
-
-            var localPathProperty = _project.Properties.Where(i => i.Name.Equals("CBTLocalPath")).ToList();
-            localPathProperty.Count.ShouldBe(2);
-            localPathProperty[0].Condition.ShouldBe($@" '$({localPathProperty[0].Name})' == '' And Exists('$([System.IO.Path]::GetDirectoryName($({globalPathProperty[0].Name})))\Local') ", StringCompareShould.IgnoreCase);
-            localPathProperty[0].Value.ShouldBe(@"$([System.IO.Path]::GetDirectoryName($(CBTGlobalPath)))\Local", StringCompareShould.IgnoreCase);
-            localPathProperty[1].Value.ShouldBe($@"$({localPathProperty[1].Name}.TrimEnd('\\'))", StringCompareShould.IgnoreCase);
-
-            var localBuildExtensionsPathProperty = _project.Properties.Where(i => i.Name.Equals("CBTLocalBuildExtensionsPath")).ToList();
-            localBuildExtensionsPathProperty.Count.ShouldBe(1);
-
-            localBuildExtensionsPathProperty[0].Condition.ShouldBe($@" '$({localBuildExtensionsPathProperty[0].Name})' == '' And '$({localPathProperty[0].Name})' != '' And Exists('$({localPathProperty[0].Name})\Extensions') ");
-            localBuildExtensionsPathProperty[0].Value.ShouldBe($@"$({localPathProperty[0].Name})\Extensions");
         }
 
         [Test]
@@ -156,7 +157,7 @@ namespace CBT.Core.UnitTests
 
             target.ShouldNotBe(null);
 
-            target.Condition.ShouldBe(" '$(RestoreCBTModules)' != 'false' And '$(CBTModulesRestored)' != 'true' ");
+            target.Condition.ShouldBe(" '$(ExcludeRestorePackageImports)' != 'true' And  '$(RestoreCBTModules)' != 'false' And '$(CBTModulesRestored)' != 'true' ");
 
             target.Inputs.ShouldBe("$(CBTModuleRestoreInputs)");
 
@@ -180,7 +181,8 @@ namespace CBT.Core.UnitTests
                 {"PackagesPath", "$(NuGetPackagesPath)"},
                 {"ProjectFullPath","$(MSBuildProjectFullPath)"},
                 {"RestoreCommand", "$(CBTModuleRestoreCommand)"},
-                {"RestoreCommandArguments", "$(CBTModuleRestoreCommandArguments)"}
+                {"RestoreCommandArguments", "$(CBTModuleRestoreCommandArguments)"},
+                {"AssetsFlag", "$(CBTModuleNugetAssetsFlagFile)"}
             });
 
             var propertyGroup = target.PropertyGroups.LastOrDefault();
@@ -202,6 +204,71 @@ namespace CBT.Core.UnitTests
             usingTask.ShouldNotBe(null);
 
             usingTask.AssemblyFile.ShouldBe("$(CBTCoreAssemblyPath)", StringCompareShould.IgnoreCase);
+        }
+
+        [Test]
+        [Description("Verifies that the GenerateAssetFlagFile target is properly defined.")]
+        public void GenerateModuleAssetFlagFileTargetTest()
+        {
+
+            var target = _project.Targets.FirstOrDefault(i => i.Name.Equals("GenerateModuleAssetFlagFile", StringComparison.OrdinalIgnoreCase));
+
+            target.Children.Count.ShouldBe(2);
+
+            target.ShouldNotBe(null);
+
+            target.Condition.ShouldBe(@" '$(ExcludeRestorePackageImports)' == 'true' ");
+
+            target.Inputs.ShouldBe(string.Empty);
+
+            target.Outputs.ShouldBe(string.Empty);
+
+            target.AfterTargets.ShouldBe("_GenerateRestoreProjectSpec");
+
+            target.BeforeTargets.ShouldBe(string.Empty);
+
+            target.DependsOnTargets.ShouldBe(string.Empty);
+
+            var targetChildrenEnumerator = target.Children.GetEnumerator();
+
+            targetChildrenEnumerator.MoveNext();
+
+            var task = targetChildrenEnumerator.Current as ProjectTaskElement;
+            task.Name.ShouldBe("MakeDir");
+
+            task.ShouldNotBe(null);
+
+            task.Condition.ShouldBe(string.Empty);
+
+            task.Parameters.Count.ShouldBe(1);
+
+            task.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                {"Directories", "$([System.IO.Path]::GetDirectoryName($(CBTModuleNugetAssetsFlagFile)))"},
+            });
+
+            targetChildrenEnumerator.MoveNext();
+
+            var task2 = targetChildrenEnumerator.Current as ProjectTaskElement;
+
+            task2.Name.ShouldBe("WriteLinesToFile");
+
+            task2.ShouldNotBe(null);
+
+            task2.Condition.ShouldBe(string.Empty);
+
+            task2.Parameters.Count.ShouldBe(3);
+
+            task2.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                {"File", "$(CBTModuleNugetAssetsFlagFile)"},
+                {"Lines", "$(RestoreOutputAbsolutePath)"},
+                {"Overwrite", "true"},
+            });
+
+            task2.Location.ShouldBeGreaterThan(task.Location);
+
+            targetChildrenEnumerator.Dispose();
         }
 
         [Test]
@@ -237,15 +304,6 @@ namespace CBT.Core.UnitTests
             moduleImport.Condition.ShouldBe(" ('$(CBTModulesRestored)' == 'true' Or '$(BuildingInsideVisualStudio)' == 'true') And Exists('$(CBTModulePropertiesFile)') ");
 
             moduleImport.Location.ShouldBeGreaterThan(secondPropertyGroup.Location, "The import of '$(CBTModulePropertiesFile)' should come after the second property group");
-        }
-
-        private void PropertyShouldBe(string name, string value, StringCompareShould stringCompareShould = StringCompareShould.IgnoreCase)
-        {
-            var property = _project.Properties.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-
-            property.ShouldNotBe(null);
-
-            property.Value.ShouldBe(value, stringCompareShould);
         }
 
         private void ItemShouldBe( IEnumerable<Items> items, StringCompareShould stringCompareShould = StringCompareShould.IgnoreCase)
