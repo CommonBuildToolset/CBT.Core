@@ -80,8 +80,9 @@
     <CBTModuleRestoreCommandArguments Condition=" '$(CBTModuleRestoreCommandArguments)' == '' ">restore &quot;$(CBTModulePackageConfigPath)&quot; -NonInteractive</CBTModuleRestoreCommandArguments>
 
     <!-- ExcludeRestorePackageImports is only passed to the embedded <MSBuild calls in the NuGet.targets we are using it to prevent the infinite loop of executing nuget during re-evaluation. -->
-    <CBTModuleNugetAssetsFlagFile Condition=" '$(CBTModuleNugetAssetsFlagFile)' == '' ">$(CBTIntermediateOutputPath)\AssetsLockFilePath.flag</CBTModuleNugetAssetsFlagFile>
-    <CBTModulesRestored Condition=" '$(ExcludeRestorePackageImports)' != 'true' And '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTPackagesFallbackPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath), $(CBTModuleNugetAssetsFlagFile)))</CBTModulesRestored>
+    <CBTModuleNuGetAssetsFlagFile Condition=" '$(CBTModuleNuGetAssetsFlagFile)' == '' ">$(CBTIntermediateOutputPath)\AssetsLockFilePath.flag</CBTModuleNuGetAssetsFlagFile>
+    <CBTModulesRestored Condition=" '$(ExcludeRestorePackageImports)' == 'true' ">true</CBTModulesRestored>
+    <CBTModulesRestored Condition=" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTPackagesFallbackPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath), $(CBTModuleNuGetAssetsFlagFile)))</CBTModulesRestored>
 
   </PropertyGroup>
 
@@ -106,7 +107,7 @@
   </Target>
 
   <Target Name="RestoreCBTModules"
-      Condition=" '$(ExcludeRestorePackageImports)' != 'true' And  '$(RestoreCBTModules)' != 'false' And '$(CBTModulesRestored)' != 'true' "
+      Condition=" '$(RestoreCBTModules)' != 'false' And '$(CBTModulesRestored)' != 'true' "
       Inputs="$(CBTModuleRestoreInputs)"
       Outputs="$([MSBuild]::ValueOrDefault($(CBTModulePropertiesFile), 'null'))">
 
@@ -124,7 +125,7 @@
       ProjectFullPath="$(MSBuildProjectFullPath)"
       RestoreCommand="$(CBTModuleRestoreCommand)"
       RestoreCommandArguments="$(CBTModuleRestoreCommandArguments)"
-      AssetsFlag="$(CBTModuleNugetAssetsFlagFile)"
+      AssetsFlag="$(CBTModuleNuGetAssetsFlagFile)"
       />
 
     <PropertyGroup>
@@ -134,8 +135,8 @@
   </Target>
 
   <Target Name="GenerateModuleAssetFlagFile" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(ExcludeRestorePackageImports)' == 'true' " >
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(CBTModuleNugetAssetsFlagFile)))" />
-    <WriteLinesToFile File="$(CBTModuleNugetAssetsFlagFile)" Lines="$(RestoreOutputAbsolutePath)" Overwrite="true"/>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(CBTModuleNuGetAssetsFlagFile)))" />
+    <WriteLinesToFile File="$(CBTModuleNuGetAssetsFlagFile)" Lines="$(RestoreOutputAbsolutePath)" Overwrite="true"/>
   </Target>
 
   <Import Project="$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)" Condition=" '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)') " />

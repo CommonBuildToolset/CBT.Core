@@ -103,6 +103,16 @@ namespace CBT.Core.UnitTests
             actualPackages.ShouldBe(_packages);
         }
 
+        [Test]
+        public void NuGetPackageReferenceProjectParserTest()
+        {
+            NuGetPackageReferenceProjectParser configParser = new NuGetPackageReferenceProjectParser(null);
+
+            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectPackageReferencePath, _assetsFileDirectory).ToList();
+
+            actualPackages.ShouldBe(_packages);
+        }
+
         [OneTimeTearDown]
         public void TestCleanup()
         {

@@ -25,7 +25,7 @@ namespace CBT.Core.Internal
             {
                 new NuGetPackagesConfigParser(),
                 new NuGetProjectJsonParser(),
-                new NuGetPackageReferenceProjectParser()
+                new NuGetPackageReferenceProjectParser(logHelper)
             }, packagesPath, assetsFileDirectory, packageConfigPaths)
         {
             _log = logHelper;
