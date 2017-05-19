@@ -79,9 +79,7 @@
     <CBTModuleRestoreCommand Condition=" '$(CBTModuleRestoreCommand)' == '' ">$(CBTNuGetBinDir)\NuGet.exe</CBTModuleRestoreCommand>
     <CBTModuleRestoreCommandArguments Condition=" '$(CBTModuleRestoreCommandArguments)' == '' ">restore &quot;$(CBTModulePackageConfigPath)&quot; -NonInteractive</CBTModuleRestoreCommandArguments>
 
-    <!-- ExcludeRestorePackageImports is only passed to the embedded <MSBuild calls in the NuGet.targets we are using it to prevent the infinite loop of executing nuget during re-evaluation. -->
     <CBTModuleNuGetAssetsFlagFile Condition=" '$(CBTModuleNuGetAssetsFlagFile)' == '' ">$(CBTIntermediateOutputPath)\AssetsLockFilePath.flag</CBTModuleNuGetAssetsFlagFile>
-    <CBTModulesRestored Condition=" '$(ExcludeRestorePackageImports)' == 'true' ">true</CBTModulesRestored>
     <CBTModulesRestored Condition=" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And Exists('$(CBTCoreAssemblyPath)') ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null, null).CreateInstanceFromAndUnwrap($(CBTCoreAssemblyPath), $(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTPackagesFallbackPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath), $(CBTModuleNuGetAssetsFlagFile)))</CBTModulesRestored>
 
   </PropertyGroup>
@@ -134,7 +132,8 @@
 
   </Target>
 
-  <Target Name="GenerateModuleAssetFlagFile" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(ExcludeRestorePackageImports)' == 'true' And '$(RestoreOutputAbsolutePath)' != '' " >
+  <!-- _GenerateRestoreProjectSpec is a from the nuget.targets new to nuget 4.x. -->
+  <Target Name="GenerateModuleAssetFlagFile" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(RestoreOutputAbsolutePath)' != '' " >
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(CBTModuleNuGetAssetsFlagFile)))" />
     <WriteLinesToFile File="$(CBTModuleNuGetAssetsFlagFile)" Lines="$(RestoreOutputAbsolutePath)" Overwrite="true"/>
   </Target>
