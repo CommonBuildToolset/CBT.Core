@@ -8,6 +8,8 @@
     <IntermediateOutputPath Condition=" '$(IntermediateOutputPath)'=='' ">$(BaseIntermediateOutputPath)\$(Configuration)\$(Platform)\$(MSBuildProjectFile)</IntermediateOutputPath>
     <OutputPath Condition=" '$(OutputPath)' == '' ">$(EnlistmentRoot)\bin\$(Configuration)\$(Platform)\$(MSBuildProjectName)</OutputPath>
     <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.5</TargetFrameworkVersion>
+    <!-- Temporarily pin to version 3.5 -->
+    <CBTNuGetDownloaderArguments>https://dist.nuget.org/win-x86-commandline/v3.5.0/nuget.exe</CBTNuGetDownloaderArguments>
   </PropertyGroup>
 
   <Import Project="$(EnlistmentRoot)\.build\CBT\build.props" />
