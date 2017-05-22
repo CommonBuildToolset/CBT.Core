@@ -39,6 +39,8 @@ namespace CBT.Core.Tasks
 
         public string[] AfterImports { get; set; }
 
+        public string AssetsFlag { get; set; }
+
         public string[] BeforeImports { get; set; }
 
         /// <summary>
@@ -105,7 +107,7 @@ namespace CBT.Core.Tasks
                     if (!releaseSemaphore)
                     {
                         _log.LogMessage(MessageImportance.Low, "Another project is already restoring CBT modules.  Waiting for it to complete.");
-                        releaseSemaphore = semaphore.WaitOne(TimeSpan.FromMinutes(30));
+                        releaseSemaphore = semaphore.WaitOne(RestoreTimeout);
 
                         return releaseSemaphore;
                     }
@@ -131,7 +133,7 @@ namespace CBT.Core.Tasks
 
                     _log.LogMessage(MessageImportance.Low, "Create CBT module imports");
 
-                    ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(_log, PackagesPath, PackageConfig);
+                    ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(_log, PackagesPath, GetAssetsFileDirectory(), PackageConfig);
 
                     if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, BeforeImports, AfterImports))
                     {
@@ -157,7 +159,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string packagesPath, string packagesFallbackPath, string restoreCommand, string restoreCommandArguments, string projectFullPath)
+        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string packagesPath, string packagesFallbackPath, string restoreCommand, string restoreCommandArguments, string projectFullPath, string assetsFlag)
         {
             BuildEngine = new CBTBuildEngine();
 
@@ -176,6 +178,7 @@ namespace CBT.Core.Tasks
             _log.LogMessage(MessageImportance.Low, $"  ProjectFullPath = {projectFullPath}");
             _log.LogMessage(MessageImportance.Low, $"  RestoreCommand = {restoreCommand}");
             _log.LogMessage(MessageImportance.Low, $"  RestoreCommandArguments = {restoreCommandArguments}");
+            _log.LogMessage(MessageImportance.Low, $"  AssetsFlag = {assetsFlag}");
 
             if (!String.IsNullOrWhiteSpace(packagesPath) && !Directory.Exists(packagesPath))
             {
@@ -201,6 +204,7 @@ namespace CBT.Core.Tasks
             ProjectFullPath = projectFullPath;
             RestoreCommand = restoreCommand;
             RestoreCommandArguments = restoreCommandArguments;
+            AssetsFlag = assetsFlag;
 
             Console.CancelKeyPress += (sender, args) =>
             {
@@ -213,6 +217,15 @@ namespace CBT.Core.Tasks
             };
 
             return Execute();
+        }
+
+        private string GetAssetsFileDirectory()
+        {
+            if (string.IsNullOrWhiteSpace(AssetsFlag) || !File.Exists(AssetsFlag))
+            {
+                return string.Empty;
+            }
+            return File.ReadAllText(AssetsFlag).TrimEnd(Environment.NewLine.ToCharArray());
         }
 
         /// <summary>
@@ -379,7 +392,8 @@ namespace CBT.Core.Tasks
                       ?? SettingsUtility.GetGlobalPackagesFolder(settings) // This shouldn't technically count but it makes sense to obey the new locations for the older style
                       ?? PackagesFallbackPath;
             }
-            else if (packageConfigFileName != null && packageConfigFileName.Equals(ProjectJsonPathUtilities.ProjectConfigFileName, StringComparison.OrdinalIgnoreCase))
+            // The case for project.json as well as PackageReference scenario.
+            else if (!string.IsNullOrWhiteSpace(packageConfigFileName) && string.IsNullOrWhiteSpace(packagesPath))
             {
                 packagesPath = !String.IsNullOrWhiteSpace(PackagesPath) ? PackagesPath
                     : SettingsUtility.GetGlobalPackagesFolder(settings)
@@ -425,6 +439,7 @@ namespace CBT.Core.Tasks
                 },
             })
             {
+                process.StartInfo.EnvironmentVariables.Add("RestoreCBTModules", "false");
                 process.ErrorDataReceived += (sender, args) =>
                 {
                     if (!String.IsNullOrWhiteSpace(args?.Data))

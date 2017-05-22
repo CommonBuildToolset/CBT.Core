@@ -29,17 +29,21 @@ namespace CBT.Core.UnitTests
         };
 
         private readonly IList<PackageIdentity> _packages;
+        private readonly string _projectPackageReferencePath;
         private readonly string _packagesConfigPath;
         private readonly string _packagesPath;
         private readonly string _projectJsonPath;
         private readonly string _projectLockFilePath;
+        private readonly string _assetsFileDirectory;
 
         public ModulePropertyGeneratorTest()
         {
+            _projectPackageReferencePath = Path.Combine(_intermediateOutputPath, "PackageReference.csproj");
             _packagesConfigPath = Path.Combine(_intermediateOutputPath, "packages.config");
             _projectJsonPath = Path.Combine(_intermediateOutputPath, "project.json");
             _projectLockFilePath = Path.Combine(_intermediateOutputPath, "project.lock.json");
             _packagesPath = Path.Combine(_intermediateOutputPath, "packages");
+            _assetsFileDirectory = _intermediateOutputPath;
 
             _packages = new List<PackageIdentity>
             {
@@ -74,11 +78,17 @@ namespace CBT.Core.UnitTests
         }
 
         [Test]
+        public void ModulePropertiesAreCreatedPackageReference()
+        {
+            VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}");
+        }
+
+        [Test]
         public void NuGetPackagesConfigParserTest()
         {
             NuGetPackagesConfigParser configParser = new NuGetPackagesConfigParser();
 
-            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _packagesConfigPath).ToList();
+            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _packagesConfigPath, null).ToList();
 
             actualPackages.ShouldBe(_packages);
         }
@@ -88,7 +98,17 @@ namespace CBT.Core.UnitTests
         {
             NuGetProjectJsonParser configParser = new NuGetProjectJsonParser();
 
-            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectJsonPath).ToList();
+            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectJsonPath, null).ToList();
+
+            actualPackages.ShouldBe(_packages);
+        }
+
+        [Test]
+        public void NuGetPackageReferenceProjectParserTest()
+        {
+            NuGetPackageReferenceProjectParser configParser = new NuGetPackageReferenceProjectParser(null);
+
+            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectPackageReferencePath, _assetsFileDirectory).ToList();
 
             actualPackages.ShouldBe(_packages);
         }
@@ -145,6 +165,18 @@ namespace CBT.Core.UnitTests
                     Version = i.Version,
                 }).ToList(),
             });
+
+            // Write out a project.assests.json file
+            //
+            new LockFileFormat().Write(Path.Combine(_assetsFileDirectory, "project.assets.json"), new LockFile
+            {
+                Version = 1,
+                Libraries = _packages.Select(i => new LockFileLibrary
+                {
+                    Name = i.Id,
+                    Version = i.Version,
+                }).ToList(),
+            });
         }
 
         private void VerifyModulePropertiesAreCreated(string packageConfig, Func<PackageIdentity, string> packageFolderFunc)
@@ -174,7 +206,7 @@ namespace CBT.Core.UnitTests
                 BuildEngine = new TestBuildEngine()
             });
 
-            ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(logHelper, _packagesPath, packageConfig);
+            ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(logHelper, _packagesPath, _assetsFileDirectory, packageConfig);
 
             string outputPath = Path.Combine(_intermediateOutputPath, "build.props");
             string extensionsPath = Path.Combine(_intermediateOutputPath, "Extensions");
@@ -195,12 +227,12 @@ namespace CBT.Core.UnitTests
             // Verify all properties
             //
             foreach (Tuple<string, string> item in new[]
-            {
-                new Tuple<string, string>("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)"),
-            }.Concat(_packages.Reverse().Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase))).Select(i =>
-                new Tuple<string, string>(
-                    $"{ModulePropertyGenerator.PropertyNamePrefix}{i.Id.Replace(".", "_")}",
-                    $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}"))))
+                        {
+                             new Tuple<string, string>("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)"),
+                        }.Concat(_packages.Reverse().Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase))).Select(i =>
+                                new Tuple<string, string>(
+                                $"{ModulePropertyGenerator.PropertyNamePrefix}{i.Id.Replace(".", "_")}",
+                                $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}"))))
             {
                 ProjectPropertyElement propertyElement = project.Properties.FirstOrDefault(i => i.Name.Equals(item.Item1));
 

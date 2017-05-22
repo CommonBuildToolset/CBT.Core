@@ -12,7 +12,7 @@ namespace CBT.Core.Internal
     /// </summary>
     internal sealed class NuGetPackagesConfigParser : INuGetPackageConfigParser
     {
-        public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath)
+        public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, string assetsFileDirectory)
         {
             PackagePathResolver packagePathResolver = new PackagePathResolver(packagesPath);
 
