@@ -12,8 +12,10 @@ namespace CBT.Core.Internal
 {
     internal sealed class ModulePropertyGenerator
     {
-        internal static readonly string ImportRelativePath = Path.Combine("CBT", "Module", "$(MSBuildThisFile)");
-        internal static readonly string ModuleConfigPath = Path.Combine("CBT", "Module", "module.config");
+        internal static readonly string ImportRelativePath = Path.Combine("build", "$(MSBuildThisFile)");
+        internal static readonly string ModuleConfigPath = Path.Combine("build", "module.config");
+        // TODO: when CBT\Module support is dropped delete this property.
+        internal static readonly string ModuleRelativePathV1 = Path.Combine("CBT", "Module");
         internal static readonly string PropertyNamePrefix = "CBTModule_";
         internal static readonly string PropertyValuePrefix = $"$(NuGetPackagesPath){Path.DirectorySeparatorChar}";
         private readonly CBTTaskLogHelper _log;
@@ -109,7 +111,8 @@ namespace CBT.Core.Internal
 
         private void AddImports(ProjectRootElement project, IEnumerable<string> modulePaths)
         {
-            foreach (ProjectImportElement import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(modulePath => project.AddImport(Path.Combine(modulePath, ImportRelativePath))))
+            // TODO: When deprecating CBT\Module support remove "Directory.Exists(Path.Combine(modulePath, ModuleRelativePathV1)) ? project.AddImport(Path.Combine(modulePath, ModuleRelativePathV1, "$(MSBuildThisFile)" )) :"
+            foreach (ProjectImportElement import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(modulePath => Directory.Exists(Path.Combine(modulePath.Replace("$(NuGetPackagesPath)", _packagesPath), ModuleRelativePathV1)) ? project.AddImport(Path.Combine(modulePath, ModuleRelativePathV1, "$(MSBuildThisFile)")) : project.AddImport(Path.Combine(modulePath, ImportRelativePath))))
             {
                 import.Condition = $" Exists('{import.Project}') ";
             }
@@ -148,6 +151,12 @@ namespace CBT.Core.Internal
             Parallel.ForEach(_packages.Values, packageInfo =>
             {
                 string path = Path.Combine(packageInfo.FullPath, ModuleConfigPath);
+
+                // TODO: when deprecating CBT\Module support remove below condition. "Directory.Exists(Path.Combine(packageInfo.FullPath, ModuleRelativePathV1)"
+                if (Directory.Exists(Path.Combine(packageInfo.FullPath, ModuleRelativePathV1)))
+                {
+                    path = Path.Combine(packageInfo.FullPath, ModuleRelativePathV1, "module.config");
+                }
 
                 if (File.Exists(path))
                 {
