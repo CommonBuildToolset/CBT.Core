@@ -1,28 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.Construction;
-using NUnit.Framework;
 using Shouldly;
+using Xunit;
 
 namespace CBT.Core.UnitTests
 {
     /// <summary>
     /// Tests to verify the core build.props file.
     /// </summary>
-    [TestFixture]
-    public class BuildPropsTest
+    public class BuildPropsTest : TestBase
     {
         private ProjectRootElement _project;
 
-        [OneTimeSetUp]
-        public void TestInitialize()
+        public BuildPropsTest()
         {
-            _project = ProjectRootElement.Open(Path.Combine(TestContext.CurrentContext.TestDirectory, "build.props"));
+            _project = ProjectRootElement.Open(Path.Combine(TestAssemblyDirectory, "build.props"));
         }
 
-        [Test]
+        [Fact]
         [Description("Verifies that required properties exist in the build.props file.")]
         public void RequiredPropertiesTest()
         {
@@ -81,7 +80,7 @@ namespace CBT.Core.UnitTests
 
         }
 
-        [Test]
+        [Fact]
         [Description("Verifies that required Items exist in the build.props file.")]
         public void RequiredItemsTest()
         {
@@ -118,14 +117,14 @@ namespace CBT.Core.UnitTests
             ItemShouldBe(items);
         }
 
-        [Test]
+        [Fact]
         [Description("Verifies intialTargets are properly defined.")]
         public void InitialTargetsTest()
         {
             _project.InitialTargets.ShouldBe("ShowCBTParseErrors;RestoreCBTModules");
         }
 
-        [Test]
+        [Fact]
         [Description("Verifies that the ShowCBTParseErrors target and Error task are properly defined.")]
         public void ShowCBTParseErrorsTargetTest()
         {
@@ -148,7 +147,7 @@ namespace CBT.Core.UnitTests
 
         }
 
-        [Test]
+        [Fact]
         [Description("Verifies that the RestoreCBTModules target and RestoreModules task are properly defined.")]
         public void RestoreCBTModulesTargetTest()
         {
@@ -206,7 +205,7 @@ namespace CBT.Core.UnitTests
             usingTask.AssemblyFile.ShouldBe("$(CBTCoreAssemblyPath)", StringCompareShould.IgnoreCase);
         }
 
-        [Test]
+        [Fact]
         [Description("Verifies that the GenerateAssetFlagFile target is properly defined.")]
         public void GenerateModuleAssetFlagFileTargetTest()
         {
@@ -271,7 +270,7 @@ namespace CBT.Core.UnitTests
             targetChildrenEnumerator.Dispose();
         }
 
-        [Test]
+        [Fact]
         [Description("Verifies that imports are correct.")]
         public void ImportsTest()
         {

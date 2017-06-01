@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <!-- To support build.props import convention for older projects until they are converted disable auto import of directory build props when building in msbuild 15. -->
-    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
-  </PropertyGroup>
-  <Import Project="Directory.Build.props" Condition=" '$(DirectoryBuildPropsImported)'!='true' "/>
-</Project>

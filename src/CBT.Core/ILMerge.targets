@@ -1,16 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <ILMergeIntermediateOutputPath>$(IntermediateOutputPath)Merged\</ILMergeIntermediateOutputPath>
-    <ILMergeIntermediateAssembly>$(ILMergeIntermediateOutputPath)$(TargetName)$(TargetExt)</ILMergeIntermediateAssembly>
-    <ILMergeIntermediateDebugSymbolsFile>$(ILMergeIntermediateOutputPath)$(TargetName).pdb</ILMergeIntermediateDebugSymbolsFile>
-    <ILMergeOutputPath>$(OutputPath)Merged\</ILMergeOutputPath>
-  </PropertyGroup>
-
   <Target Name="PrepareForILMerge"
-          DependsOnTargets="ResolveNuGetPackageAssets">
+          DependsOnTargets="ResolveLockFileReferences">
+    <PropertyGroup>
+      <ILMergeIntermediateOutputPath>$(IntermediateOutputPath)Merged\</ILMergeIntermediateOutputPath>
+      <ILMergeIntermediateAssembly>$(ILMergeIntermediateOutputPath)$(TargetName)$(TargetExt)</ILMergeIntermediateAssembly>
+      <ILMergeIntermediateDebugSymbolsFile>$(ILMergeIntermediateOutputPath)$(TargetName).pdb</ILMergeIntermediateDebugSymbolsFile>
+      <ILMergeOutputPath>$(OutputPath)Merged\</ILMergeOutputPath>
+    </PropertyGroup>
+    
     <ItemGroup>
-      <ILMergeAssemblies Include="@(_ReferencesFromNuGetPackages)" Condition=" '%(_ReferencesFromNuGetPackages.NuGetSourceType)' == 'Package' And '%(_ReferencesFromNuGetPackages.NuGetIsFrameworkReference)' != 'true' " />
+      <ILMergeAssemblies Include="@(Reference)" Condition=" '%(Reference.NuGetSourceType)' == 'Package' And '%(Reference.NuGetIsFrameworkReference)' != 'true' " />
     </ItemGroup>
   </Target>
 

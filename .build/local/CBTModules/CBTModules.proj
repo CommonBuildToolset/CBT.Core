@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net45</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CBT.NuGet" Version="1.0.97" />
+    <PackageReference Include="CBT.Traversal" Version="1.0.31" />
+    <PackageReference Include="CBT.DotNetFx" Version="4.5.0-beta03" />
+  </ItemGroup>
+</Project>
