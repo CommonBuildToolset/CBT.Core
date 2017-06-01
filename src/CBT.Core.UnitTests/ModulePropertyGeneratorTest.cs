@@ -212,7 +212,7 @@ namespace CBT.Core.UnitTests
                     Directory.CreateDirectory(extensionFolder);
                 }
                 _moduleExtensions.First(i => i.Item1.Equals(pkg.Id)).Item2.ToList().ForEach(e => File.WriteAllText(Path.Combine(extensionFolder, e), string.Empty));
-                File.WriteAllText(Path.Combine(extensionFolder, "build.props"), string.Empty);
+                File.WriteAllText(Path.Combine(extensionFolder, $"{pkg.Id}.props"), string.Empty);
             }
 
             var logHelper = new CBTTaskLogHelper(new TestTask()
@@ -256,7 +256,7 @@ namespace CBT.Core.UnitTests
             }
 
             List<string> expectedImports = importsBefore
-                                                  .Concat(_packages.Select(i => File.Exists($"{_packagesPath}\\{packageFolderFunc(i)}\\{ModulePropertyGenerator.ImportRelativePath}\\build.props") ? $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}\\{ModulePropertyGenerator.ImportRelativePath}\\build.props": string.Empty)
+                                                  .Concat(_packages.Select(i => File.Exists($"{_packagesPath}\\{packageFolderFunc(i)}\\{ModulePropertyGenerator.ImportRelativePath}\\{i.Id}.props") ? $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}\\{ModulePropertyGenerator.ImportRelativePath}\\{i.Id}.props": string.Empty)
                                                                    .Where(imp => !string.IsNullOrWhiteSpace(imp)))
                                                   .Concat(importsAfter).ToList();
 
