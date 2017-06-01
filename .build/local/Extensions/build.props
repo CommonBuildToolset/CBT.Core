@@ -5,6 +5,11 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <RootNamespace Condition=" '$(RootNamespace)' == '' ">$(MSBuildProjectName)</RootNamespace>
+    <AssemblyName Condition=" '$(AssemblyName)' == '' ">$(MSBuildProjectName)</AssemblyName>
+  </PropertyGroup>
+
   <PropertyGroup Condition=" '$(MSBuildProjectExtension)' == '.csproj' ">
     <AppDesignerFolder Condition=" '$(AppDesignerFolder)' == '' ">Properties</AppDesignerFolder>
     <FileAlignment Condition=" '$(FileAlignment)' == '' ">512</FileAlignment>
