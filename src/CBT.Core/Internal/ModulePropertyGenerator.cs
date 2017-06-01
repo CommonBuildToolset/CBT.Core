@@ -71,13 +71,23 @@ namespace CBT.Core.Internal
             ProjectRootElement project = CreateProjectWithNuGetProperties(outputPath);
 
 
-            beforeModuleImports?.Where(i => !String.IsNullOrWhiteSpace(i)).ToList()
-                                .ForEach(imp => project.AddImport(imp));
+            if (beforeModuleImports != null)
+            {
+                foreach (ProjectImportElement import in beforeModuleImports.Where(i => !String.IsNullOrWhiteSpace(i)).Select(project.AddImport))
+                {
+                    import.Condition = $" Exists('{import.Project}') ";
+                }
+            }
 
             AddImports(project, _packages.Values);
 
-            afterModuleImports?.Where(i => !String.IsNullOrWhiteSpace(i)).ToList()
-                                .ForEach(imp => project.AddImport(imp));
+            if (afterModuleImports != null)
+            {
+                foreach (ProjectImportElement import in afterModuleImports.Where(i => !String.IsNullOrWhiteSpace(i)).Select(project.AddImport))
+                {
+                    import.Condition = $" Exists('{import.Project}') ";
+                }
+            }
 
 
             _log.LogMessage(MessageImportance.Low, $"Saving import file '{outputPath}'.");
