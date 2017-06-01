@@ -201,6 +201,20 @@ namespace CBT.Core.UnitTests
                 ).Save(moduleConfigPath);
             }
 
+            // Write out all extension point files and build.props
+            //
+            foreach (var pkg in _packages)
+            {
+                PackageIdentity package = _packages.First(i => i.Id.Equals(pkg.Id) && i.Version.Equals(pkg.Version));
+                var extensionFolder = Path.Combine(_packagesPath, packageFolderFunc(package), "build");
+                if (!Directory.Exists(extensionFolder))
+                {
+                    Directory.CreateDirectory(extensionFolder);
+                }
+                _moduleExtensions.First(i => i.Item1.Equals(pkg.Id)).Item2.ToList().ForEach(e => File.WriteAllText(Path.Combine(extensionFolder, e), string.Empty));
+                File.WriteAllText(Path.Combine(extensionFolder, "build.props"), string.Empty);
+            }
+
             var logHelper = new CBTTaskLogHelper(new TestTask()
             {
                 BuildEngine = new TestBuildEngine()
@@ -242,7 +256,8 @@ namespace CBT.Core.UnitTests
             }
 
             List<string> expectedImports = importsBefore
-                                                  .Concat(_packages.Select(i => $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}\\{ModulePropertyGenerator.ImportRelativePath}"))
+                                                  .Concat(_packages.Select(i => File.Exists($"{_packagesPath}\\{packageFolderFunc(i)}\\{ModulePropertyGenerator.ImportRelativePath}\\build.props") ? $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}\\{ModulePropertyGenerator.ImportRelativePath}\\build.props": string.Empty)
+                                                                   .Where(imp => !string.IsNullOrWhiteSpace(imp)))
                                                   .Concat(importsAfter).ToList();
 
             List<ProjectImportElement> actualImports = project.Imports.ToList();
@@ -252,8 +267,6 @@ namespace CBT.Core.UnitTests
             for (int i = 0; i < expectedImports.Count; i++)
             {
                 actualImports[i].Project.ShouldBe(expectedImports[i], StringCompareShould.IgnoreCase);
-
-                actualImports[i].Condition.ShouldBe($" Exists('{expectedImports[i]}') ", StringCompareShould.IgnoreCase);
             }
 
             // Verify module extensions were created
@@ -267,19 +280,20 @@ namespace CBT.Core.UnitTests
                 ProjectRootElement extensionProject = ProjectRootElement.Open(extensionPath);
 
                 extensionProject.ShouldNotBeNull();
+                extensionProject.Imports.Count.ShouldBe(_packages.Count(i => _moduleExtensions.Single(me => me.Item1.Equals(i.Id))
+                    .Item2.Contains(Path.GetFileName(extensionProject.FullPath))));
 
-                extensionProject.Imports.Count.ShouldBe(_packages.Count);
-
-                for (int i = 0; i < _packages.Count; i++)
+                int importCount = 0;
+                foreach (var pkg in _packages.Where(i => _moduleExtensions.Single(me => me.Item1.Equals(i.Id))
+                    .Item2.Contains(Path.GetFileName(extensionProject.FullPath))))
                 {
-                    string importProject = $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(_packages[i])}\\{ModulePropertyGenerator.ImportRelativePath}";
-                    ProjectImportElement import = extensionProject.Imports.Skip(i).FirstOrDefault();
+                    string importProject = $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(pkg)}\\{ModulePropertyGenerator.ImportRelativePath}\\{Path.GetFileName(extensionProject.FullPath)}";
+                    ProjectImportElement import = extensionProject.Imports.Skip(importCount).FirstOrDefault();
 
                     import.ShouldNotBeNull();
 
                     import.Project.ShouldBe(importProject, StringCompareShould.IgnoreCase);
-
-                    import.Condition.ShouldBe($" Exists('{importProject}') ", StringCompareShould.IgnoreCase);
+                    importCount++;
                 }
             }
         }
