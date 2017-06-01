@@ -108,16 +108,25 @@ namespace CBT.Core.Internal
             return true;
         }
 
-        private void AddImports(ProjectRootElement project, IEnumerable<PackageIdentityWithPath> modulePaths)
+        private void AddImports(ProjectRootElement project, IEnumerable<PackageIdentityWithPath> modulePackages)
         {
-            foreach (var modulePath in modulePaths.Where(i => !string.IsNullOrWhiteSpace(i?.Path)))
+            foreach (var modulePackage in modulePackages.Where(i => !string.IsNullOrWhiteSpace(i?.Path)))
             {
-                bool v1Package = Directory.Exists(Path.Combine(modulePath.FullPath, ModuleRelativePathV1));
-                string importPath = v1Package ? Path.Combine(ModuleRelativePathV1, "$(MSBuildThisFile)") : Path.Combine(ImportRelativePath, Path.GetFileName(project.FullPath));
-                if (v1Package || File.Exists(Path.Combine(modulePath.FullPath, importPath)))
+                // For build packages import the packageId.Props into the build.props file.
+                // For cbt extension imports use the extension filename.
+                // V1 modules cbt\module will keep existing import logic of conditional existance and referencing $(MSBuildThisFile).
+                // Once V1 module support is removed this logic can be simplified.
+                string importFileName =
+                    Path.GetFileName(project?.FullPath ?? string.Empty)
+                        .Equals("build.props", StringComparison.OrdinalIgnoreCase)
+                        ? $"{modulePackage.Id}.props"
+                        : Path.GetFileName(project?.FullPath ?? "$(MSBuildThisFile)");
+                bool v1Package = Directory.Exists(Path.Combine(modulePackage.FullPath, ModuleRelativePathV1));
+                string importPath = v1Package ? Path.Combine(ModuleRelativePathV1, "$(MSBuildThisFile)") : Path.Combine(ImportRelativePath, importFileName);
+                if (v1Package || File.Exists(Path.Combine(modulePackage.FullPath, importPath)))
                 {
-                    ProjectImportElement importElement = project.AddImport(Path.Combine(PropertyValuePrefix, modulePath.Path, importPath));
-                    if (v1Package)
+                    ProjectImportElement importElement = project?.AddImport(Path.Combine(PropertyValuePrefix, modulePackage.Path, importPath));
+                    if (v1Package && importElement != null)
                     {
                         importElement.Condition = $" Exists('{importElement.Project}') ";
                     }
