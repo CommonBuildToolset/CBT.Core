@@ -112,7 +112,8 @@ namespace CBT.Core.Internal
         {
             foreach (var modulePackage in modulePackages.Where(i => !string.IsNullOrWhiteSpace(i?.Path)))
             {
-                // For build packages import the packageId.Props into the build.props file.
+                // For cbt module build packages import the packageId.Props into the build.props file.
+                // For non cbt module bulid packages do nothing let cbt.nuget handle them.
                 // For cbt extension imports use the extension filename.
                 // V1 modules cbt\module will keep existing import logic of conditional existance and referencing $(MSBuildThisFile).
                 // Once V1 module support is removed this logic can be simplified.
@@ -122,8 +123,9 @@ namespace CBT.Core.Internal
                         ? $"{modulePackage.Id}.props"
                         : Path.GetFileName(project?.FullPath ?? "$(MSBuildThisFile)");
                 bool v1Package = Directory.Exists(Path.Combine(modulePackage.FullPath, ModuleRelativePathV1));
+                bool isCbtModulePackage = v1Package || File.Exists(Path.Combine(modulePackage.FullPath, ModuleConfigPath));
                 string importPath = v1Package ? Path.Combine(ModuleRelativePathV1, "$(MSBuildThisFile)") : Path.Combine(ImportRelativePath, importFileName);
-                if (v1Package || File.Exists(Path.Combine(modulePackage.FullPath, importPath)))
+                if (v1Package || (File.Exists(Path.Combine(modulePackage.FullPath, importPath)) && isCbtModulePackage))
                 {
                     ProjectImportElement importElement = project?.AddImport(Path.Combine(PropertyValuePrefix, modulePackage.Path, importPath));
                     if (v1Package && importElement != null)
