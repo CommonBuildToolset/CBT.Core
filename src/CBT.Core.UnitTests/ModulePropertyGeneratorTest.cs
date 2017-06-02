@@ -19,10 +19,10 @@ namespace CBT.Core.UnitTests
 {
     public class ModulePropertyGeneratorTest : TestBase
     {
-        private readonly IList<Tuple<string, string[]>> _moduleExtensions = new List<Tuple<string, string[]>>
+        private readonly IList<Tuple<string, string, string[]>> _moduleExtensions = new List<Tuple<string, string, string[]>>
         {
-            new Tuple<string, string[]>("Package2.Thing", new[] {"before.package2.targets"}),
-            new Tuple<string, string[]>("Package3.a.b.c.d.e.f", new[] {"before.somethingelse.targets"}),
+            new Tuple<string, string, string[]>("Package2.Thing", new NuGetVersion("2.5.1").ToString(), new[] {"before.package2.targets"}),
+            new Tuple<string, string, string[]>("Package3.a.b.c.d.e.f", new NuGetVersion(10, 10, 9999, 9999, "beta99", "").ToString(), new[] {"before.somethingelse.targets"}),
         };
 
         private readonly IList<PackageIdentity> _packages;
@@ -32,6 +32,7 @@ namespace CBT.Core.UnitTests
         private readonly string _projectJsonPath;
         private readonly string _projectLockFilePath;
         private readonly string _assetsFileDirectory;
+        private readonly string _v1PackagePath = @"CBT\Module";
 
         public ModulePropertyGeneratorTest()
         {
@@ -59,7 +60,8 @@ namespace CBT.Core.UnitTests
                 moduleExtensions.Add($"after.package{i}.targets");
             }
 
-            _moduleExtensions.Add(new Tuple<string, string[]>("Package1", moduleExtensions.ToArray()));
+            _moduleExtensions.Add(new Tuple<string, string, string[]>("Package1", new NuGetVersion("1.0.0").ToString(), moduleExtensions.ToArray()));
+            _moduleExtensions.Add(new Tuple<string, string, string[]>("Package1", new NuGetVersion("2.0.0").ToString(), moduleExtensions.ToArray()));
 
             Directory.CreateDirectory(_packagesPath);
 
@@ -116,21 +118,39 @@ namespace CBT.Core.UnitTests
         }
 
         [Fact]
+        public void V1ModulePropertiesAreCreatedPackagesConfig()
+        {
+            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
+        }
+
+        [Fact]
+        public void V1ModulePropertiesAreCreatedProjectJson()
+        {
+            VerifyModulePropertiesAreCreated(_projectJsonPath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
+        }
+
+        [Fact]
+        public void V1ModulePropertiesAreCreatedPackageReference()
+        {
+            VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
+        }
+
+        [Fact]
         public void ModulePropertiesAreCreatedPackagesConfig()
         {
-            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}");
+            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
         }
 
         [Fact]
         public void ModulePropertiesAreCreatedProjectJson()
         {
-            VerifyModulePropertiesAreCreated(_projectJsonPath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}");
+            VerifyModulePropertiesAreCreated(_projectJsonPath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
         }
 
         [Fact]
         public void ModulePropertiesAreCreatedPackageReference()
         {
-            VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}");
+            VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
         }
 
         [Fact]
@@ -164,26 +184,41 @@ namespace CBT.Core.UnitTests
         }
 
         
-        private void VerifyModulePropertiesAreCreated(string packageConfig, Func<PackageIdentity, string> packageFolderFunc)
+        private void VerifyModulePropertiesAreCreated(string packageConfig, Func<PackageIdentity, string> packageFolderFunc, string moduleConfigPath, string importRelativePath)
         {
+            bool v1Package = importRelativePath.Equals(_v1PackagePath, StringComparison.OrdinalIgnoreCase);
             // Write out a module.config for each module that has one
             //
-            foreach (Tuple<string, string[]> moduleExtension in _moduleExtensions)
+            foreach (Tuple<string, string, string[]> moduleExtension in _moduleExtensions)
             {
                 PackageIdentity package = _packages.First(i => i.Id.Equals(moduleExtension.Item1));
 
-                string moduleConfigPath = Path.Combine(_packagesPath, packageFolderFunc(package), ModulePropertyGenerator.ModuleConfigPath);
+                string moduleConfigFilePath = Path.Combine(_packagesPath, packageFolderFunc(package), moduleConfigPath);
 
                 // ReSharper disable once AssignNullToNotNullAttribute
-                Directory.CreateDirectory(Path.GetDirectoryName(moduleConfigPath));
+                Directory.CreateDirectory(Path.GetDirectoryName(moduleConfigFilePath));
 
                 new XDocument(
                     new XDeclaration("1.0", "uf8", "yes"),
                     new XComment("This file was auto-generated by unit tests"),
                     new XElement("configuration",
                         new XElement("extensionImports",
-                            moduleExtension.Item2.Select(i => new XElement("add", new XAttribute("name", i)))))
-                ).Save(moduleConfigPath);
+                            moduleExtension.Item3.Select(i => new XElement("add", new XAttribute("name", i)))))
+                ).Save(moduleConfigFilePath);
+            }
+
+            // Write out all extension point files
+            //
+            foreach (var pkg in _packages)
+            {
+                PackageIdentity package = _packages.First(i => i.Id.Equals(pkg.Id) && i.Version.Equals(pkg.Version));
+                var extensionFolder = Path.Combine(_packagesPath, packageFolderFunc(package), importRelativePath);
+                if (!Directory.Exists(extensionFolder))
+                {
+                    Directory.CreateDirectory(extensionFolder);
+                }
+                _moduleExtensions.First(i => i.Item1.Equals(pkg.Id)).Item3.ToList().ForEach(e => File.WriteAllText(Path.Combine(extensionFolder, e), string.Empty));
+                File.WriteAllText(Path.Combine(extensionFolder, $"{pkg.Id}.props"), string.Empty);
             }
 
             var logHelper = new CBTTaskLogHelper(new TestTask()
@@ -225,9 +260,9 @@ namespace CBT.Core.UnitTests
 
                 propertyElement.Value.ShouldBe(item.Item2, StringCompareShould.IgnoreCase);
             }
-
             List<string> expectedImports = importsBefore
-                                                  .Concat(_packages.Select(i => $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}\\{ModulePropertyGenerator.ImportRelativePath}"))
+                                                  .Concat(_packages.Select(i => ExpectedImports(packageFolderFunc, importRelativePath, i, v1Package))
+                                                                   .Where(imp => !string.IsNullOrWhiteSpace(imp)))
                                                   .Concat(importsAfter).ToList();
 
             List<ProjectImportElement> actualImports = project.Imports.ToList();
@@ -237,13 +272,11 @@ namespace CBT.Core.UnitTests
             for (int i = 0; i < expectedImports.Count; i++)
             {
                 actualImports[i].Project.ShouldBe(expectedImports[i], StringCompareShould.IgnoreCase);
-
-                actualImports[i].Condition.ShouldBe($" Exists('{expectedImports[i]}') ", StringCompareShould.IgnoreCase);
             }
 
             // Verify module extensions were created
             //
-            foreach (string item in _moduleExtensions.SelectMany(i => i.Item2))
+            foreach (string item in _moduleExtensions.SelectMany(i => i.Item3))
             {
                 string extensionPath = Path.Combine(extensionsPath, item);
 
@@ -252,21 +285,37 @@ namespace CBT.Core.UnitTests
                 ProjectRootElement extensionProject = ProjectRootElement.Open(extensionPath);
 
                 extensionProject.ShouldNotBeNull();
+                var expectedImportsV2 = _moduleExtensions.Where(me => me.Item3.Contains(item) && File.Exists(Path.Combine(_packagesPath,
+                            packageFolderFunc(_packages.Single(
+                                pkg => pkg.Id.Equals(me.Item1) && pkg.Version.ToString().Equals(me.Item2))),
+                            ModulePropertyGenerator.ModuleConfigPath))).ToList();
 
-                extensionProject.Imports.Count.ShouldBe(_packages.Count);
+                int expectedProjectImportsCount = v1Package
+                    ? _packages.Count
+                    : expectedImportsV2.Count();
+                extensionProject.Imports.Count.ShouldBe(expectedProjectImportsCount);
 
-                for (int i = 0; i < _packages.Count; i++)
+                int importCount = 0;
+                foreach (var pkg in (v1Package ? _packages : _packages.Where(i => expectedImportsV2.Any(me => me.Item1.Equals(i.Id) && me.Item2.Equals(i.Version.ToString())))))
                 {
-                    string importProject = $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(_packages[i])}\\{ModulePropertyGenerator.ImportRelativePath}";
-                    ProjectImportElement import = extensionProject.Imports.Skip(i).FirstOrDefault();
+                    string importProject = $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(pkg)}\\{importRelativePath}\\{(v1Package ? "$(MSBuildThisFile)" : Path.GetFileName(extensionProject.FullPath))}";
+                    ProjectImportElement import = extensionProject.Imports.Skip(importCount).FirstOrDefault();
 
                     import.ShouldNotBeNull();
 
                     import.Project.ShouldBe(importProject, StringCompareShould.IgnoreCase);
-
-                    import.Condition.ShouldBe($" Exists('{importProject}') ", StringCompareShould.IgnoreCase);
+                    importCount++;
                 }
             }
+        }
+
+        private string ExpectedImports(Func<PackageIdentity, string> packageFolderFunc, string importRelativePath, PackageIdentity i, bool v1Package)
+        {
+            if (v1Package)
+            {
+                return $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}\\{importRelativePath}\\$(MSBuildThisFile)";
+            }
+            return (File.Exists($"{_packagesPath}\\{packageFolderFunc(i)}\\{ModulePropertyGenerator.ModuleConfigPath}") && File.Exists($"{_packagesPath}\\{packageFolderFunc(i)}\\{importRelativePath}\\{i.Id}.props")) ? $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}\\{importRelativePath}\\{i.Id}.props" : string.Empty;
         }
 
         internal sealed class TestBuildEngine : IBuildEngine

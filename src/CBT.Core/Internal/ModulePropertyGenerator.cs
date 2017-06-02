@@ -12,8 +12,9 @@ namespace CBT.Core.Internal
 {
     internal sealed class ModulePropertyGenerator
     {
-        internal static readonly string ImportRelativePath = Path.Combine("CBT", "Module", "$(MSBuildThisFile)");
-        internal static readonly string ModuleConfigPath = Path.Combine("CBT", "Module", "module.config");
+        internal static readonly string ImportRelativePath = "build";
+        internal static readonly string ModuleConfigPath = Path.Combine(ImportRelativePath, "module.config");
+        internal static readonly string ModuleRelativePathV1 = Path.Combine("CBT", "Module");
         internal static readonly string PropertyNamePrefix = "CBTModule_";
         internal static readonly string PropertyValuePrefix = $"$(NuGetPackagesPath){Path.DirectorySeparatorChar}";
         private readonly CBTTaskLogHelper _log;
@@ -67,9 +68,8 @@ namespace CBT.Core.Internal
             {
                 _log.LogMessage(MessageImportance.Low, $"  {package.Id} {package.Version}");
             }
-            ProjectRootElement project = CreateProjectWithNuGetProperties();
+            ProjectRootElement project = CreateProjectWithNuGetProperties(outputPath);
 
-            List<string> modulePaths = _packages.Values.Select(i => Path.Combine(PropertyValuePrefix, i.Path)).ToList();
 
             if (beforeModuleImports != null)
             {
@@ -79,7 +79,7 @@ namespace CBT.Core.Internal
                 }
             }
 
-            AddImports(project, modulePaths);
+            AddImports(project, _packages.Values);
 
             if (afterModuleImports != null)
             {
@@ -89,15 +89,16 @@ namespace CBT.Core.Internal
                 }
             }
 
+
             _log.LogMessage(MessageImportance.Low, $"Saving import file '{outputPath}'.");
 
-            project.Save(outputPath);
+            project.Save();
 
             foreach (string item in GetModuleExtensions().Select(i => i.Key.Trim()))
             {
                 ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, item));
 
-                AddImports(extensionProject, modulePaths);
+                AddImports(extensionProject, _packages.Values);
 
                 _log.LogMessage(MessageImportance.Low, $"Saving import file '{extensionProject.FullPath}'.");
 
@@ -107,17 +108,37 @@ namespace CBT.Core.Internal
             return true;
         }
 
-        private void AddImports(ProjectRootElement project, IEnumerable<string> modulePaths)
+        private void AddImports(ProjectRootElement project, IEnumerable<PackageIdentityWithPath> modulePackages)
         {
-            foreach (ProjectImportElement import in modulePaths.Where(i => !String.IsNullOrWhiteSpace(i)).Select(modulePath => project.AddImport(Path.Combine(modulePath, ImportRelativePath))))
+            foreach (var modulePackage in modulePackages.Where(i => !string.IsNullOrWhiteSpace(i?.Path)))
             {
-                import.Condition = $" Exists('{import.Project}') ";
+                // For cbt module build packages import the packageId.Props into the build.props file.
+                // For non cbt module build packages do nothing let cbt.nuget handle them.
+                // For cbt extension imports use the extension filename.
+                // V1 modules cbt\module will keep existing import logic of conditional existance and referencing $(MSBuildThisFile).
+                // Once V1 module support is removed this logic can be simplified.
+                string importFileName =
+                    Path.GetFileName(project?.FullPath ?? string.Empty)
+                        .Equals("build.props", StringComparison.OrdinalIgnoreCase)
+                        ? $"{modulePackage.Id}.props"
+                        : Path.GetFileName(project?.FullPath ?? "$(MSBuildThisFile)");
+                bool v1Package = Directory.Exists(Path.Combine(modulePackage.FullPath, ModuleRelativePathV1));
+                bool isCbtModulePackage = v1Package || File.Exists(Path.Combine(modulePackage.FullPath, ModuleConfigPath));
+                string importPath = v1Package ? Path.Combine(ModuleRelativePathV1, "$(MSBuildThisFile)") : Path.Combine(ImportRelativePath, importFileName);
+                if (v1Package || (File.Exists(Path.Combine(modulePackage.FullPath, importPath)) && isCbtModulePackage))
+                {
+                    ProjectImportElement importElement = project?.AddImport(Path.Combine(PropertyValuePrefix, modulePackage.Path, importPath));
+                    if (v1Package && importElement != null)
+                    {
+                        importElement.Condition = $" Exists('{importElement.Project}') ";
+                    }
+                }
             }
         }
 
-        private ProjectRootElement CreateProjectWithNuGetProperties()
+        private ProjectRootElement CreateProjectWithNuGetProperties(string projectName)
         {
-            ProjectRootElement project = ProjectRootElement.Create();
+            ProjectRootElement project = ProjectRootElement.Create(projectName);
 
             ProjectPropertyGroupElement propertyGroup = project.AddPropertyGroup();
 
@@ -148,6 +169,11 @@ namespace CBT.Core.Internal
             Parallel.ForEach(_packages.Values, packageInfo =>
             {
                 string path = Path.Combine(packageInfo.FullPath, ModuleConfigPath);
+
+                if (Directory.Exists(Path.Combine(packageInfo.FullPath, ModuleRelativePathV1)))
+                {
+                    path = Path.Combine(packageInfo.FullPath, ModuleRelativePathV1, "module.config");
+                }
 
                 if (File.Exists(path))
                 {
