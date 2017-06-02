@@ -113,7 +113,7 @@ namespace CBT.Core.Internal
             foreach (var modulePackage in modulePackages.Where(i => !string.IsNullOrWhiteSpace(i?.Path)))
             {
                 // For cbt module build packages import the packageId.Props into the build.props file.
-                // For non cbt module bulid packages do nothing let cbt.nuget handle them.
+                // For non cbt module build packages do nothing let cbt.nuget handle them.
                 // For cbt extension imports use the extension filename.
                 // V1 modules cbt\module will keep existing import logic of conditional existance and referencing $(MSBuildThisFile).
                 // Once V1 module support is removed this logic can be simplified.
@@ -170,7 +170,6 @@ namespace CBT.Core.Internal
             {
                 string path = Path.Combine(packageInfo.FullPath, ModuleConfigPath);
 
-                // TODO: when deprecating CBT\Module support remove below condition. "Directory.Exists(Path.Combine(packageInfo.FullPath, ModuleRelativePathV1)"
                 if (Directory.Exists(Path.Combine(packageInfo.FullPath, ModuleRelativePathV1)))
                 {
                     path = Path.Combine(packageInfo.FullPath, ModuleRelativePathV1, "module.config");
