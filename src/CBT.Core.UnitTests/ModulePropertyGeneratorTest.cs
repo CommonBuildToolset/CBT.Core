@@ -4,7 +4,6 @@ using Microsoft.Build.Framework;
 using NuGet.Packaging.Core;
 using NuGet.ProjectModel;
 using NuGet.Versioning;
-using NUnit.Framework;
 using Shouldly;
 using System;
 using System.Collections;
@@ -13,16 +12,14 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Xml.Linq;
+using Xunit;
 
 // ReSharper disable PossibleNullReferenceException
 
 namespace CBT.Core.UnitTests
 {
-    [TestFixture]
-    public class ModulePropertyGeneratorTest
+    public class ModulePropertyGeneratorTest : TestBase
     {
-        private readonly string _intermediateOutputPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
-
         private readonly IList<Tuple<string, string, string[]>> _moduleExtensions = new List<Tuple<string, string, string[]>>
         {
             new Tuple<string, string, string[]>("Package2.Thing", new NuGetVersion("2.5.1").ToString(), new[] {"before.package2.targets"}),
@@ -40,12 +37,12 @@ namespace CBT.Core.UnitTests
 
         public ModulePropertyGeneratorTest()
         {
-            _projectPackageReferencePath = Path.Combine(_intermediateOutputPath, "PackageReference.csproj");
-            _packagesConfigPath = Path.Combine(_intermediateOutputPath, "packages.config");
-            _projectJsonPath = Path.Combine(_intermediateOutputPath, "project.json");
-            _projectLockFilePath = Path.Combine(_intermediateOutputPath, "project.lock.json");
-            _packagesPath = Path.Combine(_intermediateOutputPath, "packages");
-            _assetsFileDirectory = _intermediateOutputPath;
+            _projectPackageReferencePath = GetFilePath("PackageReference.csproj");
+            _packagesConfigPath = GetFilePath("packages.config");
+            _projectJsonPath = GetFilePath("project.json");
+            _projectLockFilePath = GetFilePath("project.lock.json");
+            _packagesPath = GetFilePath("packages");
+            _assetsFileDirectory = TestDirectory;
 
             _packages = new List<PackageIdentity>
             {
@@ -66,85 +63,7 @@ namespace CBT.Core.UnitTests
 
             _moduleExtensions.Add(new Tuple<string, string, string[]>("Package1", new NuGetVersion("1.0.0").ToString(), moduleExtensions.ToArray()));
             _moduleExtensions.Add(new Tuple<string, string, string[]>("Package1", new NuGetVersion("2.0.0").ToString(), moduleExtensions.ToArray()));
-        }
-        [Test]
-        public void V1ModulePropertiesAreCreatedPackagesConfig()
-        {
-            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
-        }
 
-        [Test]
-        public void V1ModulePropertiesAreCreatedProjectJson()
-        {
-            VerifyModulePropertiesAreCreated(_projectJsonPath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
-        }
-
-        [Test]
-        public void V1ModulePropertiesAreCreatedPackageReference()
-        {
-            VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
-        }
-
-        [Test]
-        public void ModulePropertiesAreCreatedPackagesConfig()
-        {
-            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
-        }
-
-        [Test]
-        public void ModulePropertiesAreCreatedProjectJson()
-        {
-            VerifyModulePropertiesAreCreated(_projectJsonPath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
-        }
-
-        [Test]
-        public void ModulePropertiesAreCreatedPackageReference()
-        {
-            VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
-        }
-
-        [Test]
-        public void NuGetPackagesConfigParserTest()
-        {
-            NuGetPackagesConfigParser configParser = new NuGetPackagesConfigParser();
-
-            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _packagesConfigPath, null).ToList();
-
-            actualPackages.ShouldBe(_packages);
-        }
-
-        [Test]
-        public void NuGetProjectJsonParserTest()
-        {
-            NuGetProjectJsonParser configParser = new NuGetProjectJsonParser();
-
-            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectJsonPath, null).ToList();
-
-            actualPackages.ShouldBe(_packages);
-        }
-
-        [Test]
-        public void NuGetPackageReferenceProjectParserTest()
-        {
-            NuGetPackageReferenceProjectParser configParser = new NuGetPackageReferenceProjectParser(null);
-
-            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectPackageReferencePath, _assetsFileDirectory).ToList();
-
-            actualPackages.ShouldBe(_packages);
-        }
-
-        [OneTimeTearDown]
-        public void TestCleanup()
-        {
-            if (Directory.Exists(_intermediateOutputPath))
-            {
-                Directory.Delete(_intermediateOutputPath, true);
-            }
-        }
-
-        [OneTimeSetUp]
-        public void TestInitialize()
-        {
             Directory.CreateDirectory(_packagesPath);
 
             // Write out a packages.config
@@ -199,6 +118,73 @@ namespace CBT.Core.UnitTests
             });
         }
 
+        [Fact]
+        public void V1ModulePropertiesAreCreatedPackagesConfig()
+        {
+            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
+        }
+
+        [Fact]
+        public void V1ModulePropertiesAreCreatedProjectJson()
+        {
+            VerifyModulePropertiesAreCreated(_projectJsonPath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
+        }
+
+        [Fact]
+        public void V1ModulePropertiesAreCreatedPackageReference()
+        {
+            VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
+        }
+
+        [Fact]
+        public void ModulePropertiesAreCreatedPackagesConfig()
+        {
+            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
+        }
+
+        [Fact]
+        public void ModulePropertiesAreCreatedProjectJson()
+        {
+            VerifyModulePropertiesAreCreated(_projectJsonPath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
+        }
+
+        [Fact]
+        public void ModulePropertiesAreCreatedPackageReference()
+        {
+            VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
+        }
+
+        [Fact]
+        public void NuGetPackagesConfigParserTest()
+        {
+            NuGetPackagesConfigParser configParser = new NuGetPackagesConfigParser();
+
+            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _packagesConfigPath, null).ToList();
+
+            actualPackages.ShouldBe(_packages);
+        }
+
+        [Fact]
+        public void NuGetProjectJsonParserTest()
+        {
+            NuGetProjectJsonParser configParser = new NuGetProjectJsonParser();
+
+            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectJsonPath, null).ToList();
+
+            actualPackages.ShouldBe(_packages);
+        }
+
+        [Fact]
+        public void NuGetPackageReferenceProjectParserTest()
+        {
+            NuGetPackageReferenceProjectParser configParser = new NuGetPackageReferenceProjectParser(null);
+
+            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectPackageReferencePath, _assetsFileDirectory).ToList();
+
+            actualPackages.ShouldBe(_packages);
+        }
+
+        
         private void VerifyModulePropertiesAreCreated(string packageConfig, Func<PackageIdentity, string> packageFolderFunc, string moduleConfigPath, string importRelativePath)
         {
             bool v1Package = importRelativePath.Equals(_v1PackagePath, StringComparison.OrdinalIgnoreCase);
@@ -243,8 +229,8 @@ namespace CBT.Core.UnitTests
 
             ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(logHelper, _packagesPath, _assetsFileDirectory, packageConfig);
 
-            string outputPath = Path.Combine(_intermediateOutputPath, "build.props");
-            string extensionsPath = Path.Combine(_intermediateOutputPath, "Extensions");
+            string outputPath = GetFilePath("build.props");
+            string extensionsPath = GetFilePath("Extensions");
 
             string[] importsBefore = { "before.props", "before2.props" };
             string[] importsAfter = { "after.props", "after2.props" };

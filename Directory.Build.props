@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
   <PropertyGroup>
-    <!-- support building in non msbuild 15 -->
-    <DirectoryBuildPropsImported>true</DirectoryBuildPropsImported>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <EnlistmentRoot>$(MSBuildThisFileDirectory.TrimEnd('\\'))</EnlistmentRoot>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
 
-    <BaseIntermediateOutputPath Condition=" '$(BaseIntermediateOutputPath)'=='' ">$(EnlistmentRoot)\obj\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath Condition=" '$(IntermediateOutputPath)'=='' ">$(BaseIntermediateOutputPath)$(Configuration)\$(Platform)\$(MSBuildProjectFile)</IntermediateOutputPath>
-    <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
     <OutputPath Condition=" '$(OutputPath)' == '' ">$(EnlistmentRoot)\bin\$(Configuration)\$(Platform)\$(MSBuildProjectName)</OutputPath>
-    <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.5</TargetFrameworkVersion>
-    <!-- Temporarily pin to version 3.5 -->
-    <CBTNuGetDownloaderArguments>https://dist.nuget.org/win-x86-commandline/v3.5.0/nuget.exe</CBTNuGetDownloaderArguments>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(MSBuildProjectExtension)' == '.csproj' And '$(Configuration)' == 'Debug' ">
+    <DebugType Condition=" '$(DebugType)' == '' Or '$(DebugType)' == 'portable' ">full</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(MSBuildProjectExtension)' == '.csproj' And '$(Configuration)' == 'Release' ">
+    <DebugType Condition=" '$(DebugType)' == '' Or '$(DebugType)' == 'portable' ">pdbonly</DebugType>
   </PropertyGroup>
 
   <Import Project="$(EnlistmentRoot)\.build\CBT\build.props" />
