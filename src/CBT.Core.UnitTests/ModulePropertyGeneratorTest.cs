@@ -31,7 +31,7 @@ namespace CBT.Core.UnitTests
         private readonly string _packagesPath;
         private readonly string _projectJsonPath;
         private readonly string _projectLockFilePath;
-        private readonly string _assetsFileDirectory;
+        private readonly PackageRestoreData _packageRestoreData;
         private readonly string _v1PackagePath = @"CBT\Module";
 
         public ModulePropertyGeneratorTest()
@@ -41,7 +41,6 @@ namespace CBT.Core.UnitTests
             _projectJsonPath = GetFilePath("project.json");
             _projectLockFilePath = GetFilePath("project.lock.json");
             _packagesPath = GetFilePath("packages");
-            _assetsFileDirectory = TestDirectory;
 
             _packages = new List<PackageIdentity>
             {
@@ -49,6 +48,12 @@ namespace CBT.Core.UnitTests
                 new PackageIdentity("Package1", new NuGetVersion("2.0.0")),
                 new PackageIdentity("Package2.Thing", new NuGetVersion("2.5.1")),
                 new PackageIdentity("Package3.a.b.c.d.e.f", new NuGetVersion(10, 10, 9999, 9999, "beta99", "")),
+            };
+
+            _packageRestoreData = new PackageRestoreData
+            {
+                RestoreOutputAbsolutePath = TestDirectory,
+                PackageImportOrder = _packages
             };
 
             // Have one module contain 200 extensions so we can test scalability
@@ -106,7 +111,7 @@ namespace CBT.Core.UnitTests
 
             // Write out a project.assests.json file
             //
-            new LockFileFormat().Write(Path.Combine(_assetsFileDirectory, "project.assets.json"), new LockFile
+            new LockFileFormat().Write(Path.Combine(_packageRestoreData.RestoreOutputAbsolutePath, "project.assets.json"), new LockFile
             {
                 Version = 1,
                 Libraries = _packages.Select(i => new LockFileLibrary
@@ -178,7 +183,7 @@ namespace CBT.Core.UnitTests
         {
             NuGetPackageReferenceProjectParser configParser = new NuGetPackageReferenceProjectParser(null);
 
-            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectPackageReferencePath, _assetsFileDirectory).ToList();
+            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectPackageReferencePath, _packageRestoreData).ToList();
 
             actualPackages.ShouldBe(_packages);
         }
@@ -226,7 +231,7 @@ namespace CBT.Core.UnitTests
                 BuildEngine = new TestBuildEngine()
             });
 
-            ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(logHelper, _packagesPath, _assetsFileDirectory, packageConfig);
+            ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(logHelper, _packagesPath, _packageRestoreData, packageConfig);
 
             string outputPath = GetFilePath("build.props");
             string extensionsPath = GetFilePath("Extensions");

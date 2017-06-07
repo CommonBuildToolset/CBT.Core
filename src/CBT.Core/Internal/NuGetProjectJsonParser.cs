@@ -11,7 +11,7 @@ namespace CBT.Core.Internal
     /// </summary>
     internal sealed class NuGetProjectJsonParser : INuGetPackageConfigParser
     {
-        public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, string assetsFileDirectory)
+        public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, PackageRestoreData packageRestoreData)
         {
             VersionFolderPathResolver versionFolderPathResolver = new VersionFolderPathResolver(packagesPath);
 
@@ -29,9 +29,10 @@ namespace CBT.Core.Internal
 
             LockFile lockFile = LockFileUtilities.GetLockFile(lockFilePath, NullLogger.Instance);
 
+            int sortOrder = 0;
             foreach (LockFileLibrary library in lockFile.Libraries)
             {
-                yield return new PackageIdentityWithPath(library.Name, library.Version, versionFolderPathResolver.GetPackageDirectory(library.Name, library.Version), versionFolderPathResolver.GetInstallPath(library.Name, library.Version));
+                yield return new PackageIdentityWithPath(library.Name, library.Version, versionFolderPathResolver.GetPackageDirectory(library.Name, library.Version), versionFolderPathResolver.GetInstallPath(library.Name, library.Version), sortOrder++);
             }
         }
     }

@@ -12,7 +12,7 @@ namespace CBT.Core.Internal
     /// </summary>
     internal sealed class NuGetPackagesConfigParser : INuGetPackageConfigParser
     {
-        public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, string assetsFileDirectory)
+        public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, PackageRestoreData packageRestoreData)
         {
             PackagePathResolver packagePathResolver = new PackagePathResolver(packagesPath);
 
@@ -25,9 +25,10 @@ namespace CBT.Core.Internal
 
             PackagesConfigReader packagesConfigReader = new PackagesConfigReader(document);
 
+            int packageOrder = 0;
             foreach (PackageIdentity item in packagesConfigReader.GetPackages(allowDuplicatePackageIds: true).Select(i => i.PackageIdentity))
             {
-                yield return new PackageIdentityWithPath(item, packagePathResolver.GetPackageDirectoryName(item), packagePathResolver.GetInstallPath(item));
+                yield return new PackageIdentityWithPath(item, packagePathResolver.GetPackageDirectoryName(item), packagePathResolver.GetInstallPath(item), packageOrder++);
             }
         }
     }

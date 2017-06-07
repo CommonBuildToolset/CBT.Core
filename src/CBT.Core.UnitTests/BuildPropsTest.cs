@@ -212,7 +212,7 @@ namespace CBT.Core.UnitTests
 
             var target = _project.Targets.FirstOrDefault(i => i.Name.Equals("GenerateModuleAssetFlagFile", StringComparison.OrdinalIgnoreCase));
 
-            target.Children.Count.ShouldBe(2);
+            target.Children.Count.ShouldBe(3);
 
             target.ShouldNotBe(null);
 
@@ -261,11 +261,31 @@ namespace CBT.Core.UnitTests
             task2.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 {"File", "$(CBTModuleNuGetAssetsFlagFile)"},
-                {"Lines", "$(RestoreOutputAbsolutePath)"},
+                {"Lines", "RestoreOutputAbsolutePath=$(RestoreOutputAbsolutePath)"},
                 {"Overwrite", "true"},
             });
 
             task2.Location.ShouldBeGreaterThan(task.Location);
+
+            targetChildrenEnumerator.MoveNext();
+
+            var task3 = targetChildrenEnumerator.Current as ProjectTaskElement;
+
+            task3.Name.ShouldBe("WriteLinesToFile");
+
+            task3.ShouldNotBe(null);
+
+            task3.Condition.ShouldBe(string.Empty);
+
+            task3.Parameters.Count.ShouldBe(2);
+
+            task3.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                {"File", "$(CBTModuleNuGetAssetsFlagFile)"},
+                {"Lines", "%(PackageReference.Identity)=%(PackageReference.Version)"},
+            });
+
+            task3.Location.ShouldBeGreaterThan(task.Location);
 
             targetChildrenEnumerator.Dispose();
         }
