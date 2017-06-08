@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using NuGet.Versioning;
+using NuGet.Packaging.Core;
 
 namespace CBT.Core.Internal
 {
@@ -40,19 +40,35 @@ namespace CBT.Core.Internal
                 _log.LogWarning($"Missing expected nuget assests file '{lockFilePath}'.  If you are redefining BaseIntermediateOutputPath ensure it is unique per project. ");
                 yield break;
             }
+            HashSet<string> processedPackages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             LockFile lockFile = LockFileUtilities.GetLockFile(lockFilePath, NullLogger.Instance);
 
-            foreach (LockFileLibrary library in lockFile.Libraries)
+            foreach (var pkg in packageRestoreData.PackageImportOrder)
             {
-                yield return new PackageIdentityWithPath(library.Name, library.Version, versionFolderPathResolver.GetPackageDirectory(library.Name, library.Version), versionFolderPathResolver.GetInstallPath(library.Name, library.Version), GetSortOrder(library.Name, library.Version, packageRestoreData));
+                var dependencies = lockFile.Targets.First().Libraries
+                    .Where(lib => lib.Name.Equals(pkg.Id, StringComparison.OrdinalIgnoreCase) &&
+                                  lib.Version.Equals(pkg.Version)).Select(lib => lib.Dependencies).SelectMany(p => p.Select(i => i));
+                foreach (PackageDependency dependency in dependencies)
+                {
+                    // In the <PackageReference scenario nuget will only install one packageId.  If you have two packages that reference different package versions of a third package then it will choose the common highest version and if there is no common version it will error.  If you have two packages listed with two different versions it will choose the latest version and silently not install the other.
+                    // If the package is already processed then skip.  If the package is explicitly added then skip to use that order.
+                    if (!processedPackages.Contains($"{dependency.Id}") && !packageRestoreData.PackageImportOrder.Any(pio => pio.Id.Equals($"{dependency.Id}", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var installedPackage = lockFile.Libraries
+                            .First(lockPkg => lockPkg.Name.Equals($"{dependency.Id}", StringComparison.OrdinalIgnoreCase));
+                        processedPackages.Add(dependency.Id);
+                        yield return new PackageIdentityWithPath(installedPackage.Name, installedPackage.Version, versionFolderPathResolver.GetPackageDirectory(installedPackage.Name, installedPackage.Version), versionFolderPathResolver.GetInstallPath(installedPackage.Name, installedPackage.Version));
+                    }
+                }
+                if (!processedPackages.Contains($"{pkg.Id}"))
+                {
+                    var installedPackage = lockFile.Libraries
+                        .First(lockPkg => lockPkg.Name.Equals($"{pkg.Id}", StringComparison.OrdinalIgnoreCase));
+                    processedPackages.Add(pkg.Id);
+                    yield return new PackageIdentityWithPath(installedPackage.Name, installedPackage.Version, versionFolderPathResolver.GetPackageDirectory(installedPackage.Name, installedPackage.Version), versionFolderPathResolver.GetInstallPath(installedPackage.Name, installedPackage.Version));
+                }
             }
-        }
-
-        private static int GetSortOrder(string name, NuGetVersion version, PackageRestoreData packageRestoreData)
-        {
-            var importOrder = packageRestoreData.PackageImportOrder.IndexOf(packageRestoreData.PackageImportOrder.FirstOrDefault(p => p.Id.Equals(name) & p.Version.Equals(version)));
-            return !importOrder.Equals(-1) ? importOrder : packageRestoreData.PackageImportOrder.Count;
         }
     }
 }

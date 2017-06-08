@@ -25,10 +25,9 @@ namespace CBT.Core.Internal
 
             PackagesConfigReader packagesConfigReader = new PackagesConfigReader(document);
 
-            int packageOrder = 0;
             foreach (PackageIdentity item in packagesConfigReader.GetPackages(allowDuplicatePackageIds: true).Select(i => i.PackageIdentity))
             {
-                yield return new PackageIdentityWithPath(item, packagePathResolver.GetPackageDirectoryName(item), packagePathResolver.GetInstallPath(item), packageOrder++);
+                yield return new PackageIdentityWithPath(item, packagePathResolver.GetPackageDirectoryName(item), packagePathResolver.GetInstallPath(item));
             }
         }
     }

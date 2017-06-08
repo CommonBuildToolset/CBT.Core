@@ -110,7 +110,7 @@ namespace CBT.Core.Internal
 
         private void AddImports(ProjectRootElement project, IEnumerable<PackageIdentityWithPath> modulePackages)
         {
-            foreach (var modulePackage in modulePackages.Where(i => !string.IsNullOrWhiteSpace(i?.Path)).OrderBy(a => a.SortOrder))
+            foreach (var modulePackage in modulePackages.Where(i => !string.IsNullOrWhiteSpace(i?.Path)))
             {
                 // For cbt module build packages import the packageId.Props into the build.props file.
                 // For non cbt module build packages do nothing let cbt.nuget handle them.

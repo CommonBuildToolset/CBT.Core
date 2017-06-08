@@ -29,10 +29,9 @@ namespace CBT.Core.Internal
 
             LockFile lockFile = LockFileUtilities.GetLockFile(lockFilePath, NullLogger.Instance);
 
-            int sortOrder = 0;
             foreach (LockFileLibrary library in lockFile.Libraries)
             {
-                yield return new PackageIdentityWithPath(library.Name, library.Version, versionFolderPathResolver.GetPackageDirectory(library.Name, library.Version), versionFolderPathResolver.GetInstallPath(library.Name, library.Version), sortOrder++);
+                yield return new PackageIdentityWithPath(library.Name, library.Version, versionFolderPathResolver.GetPackageDirectory(library.Name, library.Version), versionFolderPathResolver.GetInstallPath(library.Name, library.Version));
             }
         }
     }
