@@ -107,7 +107,7 @@
   <Target Name="RestoreCBTModules"
       Condition=" '$(RestoreCBTModules)' != 'false' And '$(CBTModulesRestored)' != 'true' "
       Inputs="$(CBTModuleRestoreInputs)"
-      Outputs="$([MSBuild]::ValueOrDefault($(CBTModulePropertiesFile), 'null'))">
+      Outputs="$(CBTModulePropertiesFile)">
 
     <RestoreModules
       AfterImports="$(CBTModuleImportsAfter.Split(';'))"
