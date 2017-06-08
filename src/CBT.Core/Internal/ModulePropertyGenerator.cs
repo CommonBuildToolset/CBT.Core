@@ -21,18 +21,18 @@ namespace CBT.Core.Internal
         private readonly IDictionary<string, PackageIdentityWithPath> _packages;
         private readonly string _packagesPath;
 
-        public ModulePropertyGenerator(CBTTaskLogHelper logHelper, string packagesPath, string assetsFileDirectory, params string[] packageConfigPaths)
+        public ModulePropertyGenerator(CBTTaskLogHelper logHelper, string packagesPath, PackageRestoreData packageRestoreData, params string[] packageConfigPaths)
             : this(new List<INuGetPackageConfigParser>
             {
                 new NuGetPackagesConfigParser(),
                 new NuGetProjectJsonParser(),
                 new NuGetPackageReferenceProjectParser(logHelper)
-            }, packagesPath, assetsFileDirectory, packageConfigPaths)
+            }, packagesPath, packageRestoreData, packageConfigPaths)
         {
             _log = logHelper;
         }
 
-        public ModulePropertyGenerator(IList<INuGetPackageConfigParser> configParsers, string packagesPath, string assetsFileDirectory, params string[] packageConfigPaths)
+        public ModulePropertyGenerator(IList<INuGetPackageConfigParser> configParsers, string packagesPath, PackageRestoreData packageRestoreData, params string[] packageConfigPaths)
         {
             if (configParsers == null)
             {
@@ -57,7 +57,7 @@ namespace CBT.Core.Internal
             _packagesPath = packagesPath;
             _packages = packageConfigPaths
                 .SelectMany(i => configParsers
-                .SelectMany(parser => parser.GetPackages(packagesPath, i, assetsFileDirectory)))
+                .SelectMany(parser => parser.GetPackages(packagesPath, i, packageRestoreData)))
                 .ToDictionary(i => $"{i.Id}.{i.Version}", i => i, StringComparer.OrdinalIgnoreCase);
         }
 
