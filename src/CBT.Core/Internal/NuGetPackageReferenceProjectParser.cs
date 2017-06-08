@@ -53,18 +53,18 @@ namespace CBT.Core.Internal
                 {
                     // In the <PackageReference scenario nuget will only install one packageId.  If you have two packages that reference different package versions of a third package then it will choose the common highest version and if there is no common version it will error.  If you have two packages listed with two different versions it will choose the first entry and silently not install the other.
                     // If the package is already processed then skip.  If the package is explicitly added then skip to use that order.
-                    if (!processedPackages.Contains($"{dependency.Id}") && !packageRestoreData.PackageImportOrder.Any(pio => pio.Id.Equals($"{dependency.Id}", StringComparison.OrdinalIgnoreCase)))
+                    if (!processedPackages.Contains(dependency.Id, StringComparer.OrdinalIgnoreCase) && !packageRestoreData.PackageImportOrder.Any(pio => pio.Id.Equals(dependency.Id, StringComparison.OrdinalIgnoreCase)))
                     {
                         var installedPackage = lockFile.Libraries
-                            .First(lockPkg => lockPkg.Name.Equals($"{dependency.Id}", StringComparison.OrdinalIgnoreCase));
+                            .First(lockPkg => lockPkg.Name.Equals(dependency.Id, StringComparison.OrdinalIgnoreCase));
                         processedPackages.Add(dependency.Id);
                         yield return new PackageIdentityWithPath(installedPackage.Name, installedPackage.Version, versionFolderPathResolver.GetPackageDirectory(installedPackage.Name, installedPackage.Version), versionFolderPathResolver.GetInstallPath(installedPackage.Name, installedPackage.Version));
                     }
                 }
-                if (!processedPackages.Contains($"{pkg.Id}"))
+                if (!processedPackages.Contains(pkg.Id))
                 {
                     var installedPackage = lockFile.Libraries
-                        .First(lockPkg => lockPkg.Name.Equals($"{pkg.Id}", StringComparison.OrdinalIgnoreCase));
+                        .First(lockPkg => lockPkg.Name.Equals(pkg.Id, StringComparison.OrdinalIgnoreCase));
                     processedPackages.Add(pkg.Id);
                     yield return new PackageIdentityWithPath(installedPackage.Name, installedPackage.Version, versionFolderPathResolver.GetPackageDirectory(installedPackage.Name, installedPackage.Version), versionFolderPathResolver.GetInstallPath(installedPackage.Name, installedPackage.Version));
                 }

@@ -3,12 +3,11 @@ using System.IO;
 using System.Linq;
 using CBT.Core.Internal;
 using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
 using Newtonsoft.Json;
 
 namespace CBT.Core.Tasks
 {
-    public class WriteAssetsFlagJsonFile : Task
+    public class WriteAssetsFlagJsonFile : ITask
     {
 
         [Required]
@@ -17,13 +16,18 @@ namespace CBT.Core.Tasks
         [Required]
         public string File { get; set; }
 
-        public override bool Execute()
+        /// <summary>
+        /// Gets or sets the build engine associated with the task.
+        /// </summary>
+        public IBuildEngine BuildEngine { get; set; }
+
+        /// <summary>
+        /// Gets or sets any host object that is associated with the task.
+        /// </summary>
+        public ITaskHost HostObject { get; set; }
+
+        public bool Execute()
         {
-            if (string.IsNullOrWhiteSpace(File))
-            {
-                Log.LogError("File must be specifed and can not be a null/whitespace/empty string.");
-                return false;
-            }
             if (!Directory.Exists(Path.GetDirectoryName(File)))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(File));
