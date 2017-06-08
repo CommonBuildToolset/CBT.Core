@@ -48,7 +48,7 @@ namespace CBT.Core.Internal
             {
                 var dependencies = lockFile.Targets.First().Libraries
                     .Where(lib => lib.Name.Equals(pkg.Id, StringComparison.OrdinalIgnoreCase) &&
-                                  lib.Version.Equals(pkg.Version)).Select(lib => lib.Dependencies).SelectMany(p => p.Select(i => i));
+                                  lib.Version.ToString().Equals(pkg.Version, StringComparison.OrdinalIgnoreCase)).Select(lib => lib.Dependencies).SelectMany(p => p.Select(i => i));
                 foreach (PackageDependency dependency in dependencies)
                 {
                     // In the <PackageReference scenario nuget will only install one packageId.  If you have two packages that reference different package versions of a third package then it will choose the common highest version and if there is no common version it will error.  If you have two packages listed with two different versions it will choose the latest version and silently not install the other.

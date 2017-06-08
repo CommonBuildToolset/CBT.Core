@@ -145,13 +145,7 @@
         <version>%(PackageReference.Version)</version>
       </RestoreAssetsFlagData>
     </ItemGroup>
-<!--
     <WriteAssetsFlagJsonFile File="$(CBTModuleNuGetAssetsFlagFile)" Input="@(RestoreAssetsFlagData)" />
--->
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(CBTModuleNuGetAssetsFlagFile)))" />
-    <WriteLinesToFile File="$(CBTModuleNuGetAssetsFlagFile)" Lines="RestoreOutputAbsolutePath=$(RestoreOutputAbsolutePath)" Overwrite="true"/>
-    <WriteLinesToFile File="$(CBTModuleNuGetAssetsFlagFile)" Lines="%(PackageReference.Identity)=%(PackageReference.Version)"/>
-
   </Target>
   <Import Project="$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)" Condition=" '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)') " />
 

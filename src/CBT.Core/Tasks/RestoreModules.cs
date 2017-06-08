@@ -234,47 +234,7 @@ namespace CBT.Core.Tasks
                 _log.LogMessage(MessageImportance.Low, $"Package reference {AssetsFlag} not found.  Either you are not using PackageReference elements for your packages or you are using a version of nuget.exe prior to 4.x, or the cbtmodules.proj does not import CBT in some way.");
                 return null;
             }
-            //var packageRestoreData = JsonConvert.DeserializeObject<PackageRestoreData>(File.ReadAllText(AssetsFlag), new PackageRestoreDataConverter());
-            var packageRestoreData = JsonConvert.DeserializeObject<PackageRestoreData>(File.ReadAllText(AssetsFlag));
-            //JObject jObject = JObject.Parse(File.ReadAllText(AssetsFlag));
-            //var fooVer = new NuGetVersion(1,1,1,new []{"a",""},"");
-            //            var packageRestoreData = new PackageRestoreData
-            //            {
-            //                RestoreOutputAbsolutePath = (string) jObject["RestoreOutputAbsolutePath"],
-            //                PackageImportOrder = jObject["PackageImportOrder"].Select(t => new PackageIdentity((string)t.SelectToken("Id"), new NuGetVersion(JsonConvert.DeserializeObject<NuGetVersion>((string)t.SelectToken("Version"))))).ToList()
-            ////                    $"{(string)t.SelectToken("Version").SelectToken("Major")}.{(string)t.SelectToken("Version").SelectToken("Minor")}.{(string)t.SelectToken("Version").SelectToken("Major")}-{}"))).ToList(),
-            //            };
-            //new NuGetVersion((string)t.SelectToken("Version"))
-            //var packageRestoreData = new PackageRestoreData();
-            //PackageRestoreData deserializedProduct = JsonConvert.DeserializeObject<PackageRestoreData>(File.ReadAllText(AssetsFlag));
-
-            //JsonSerializer serializer = new JsonSerializer {NullValueHandling = NullValueHandling.Ignore};
-
-            //using (StreamWriter sw = new StreamWriter(AssetsFlag))
-            //{
-            //    using (JsonWriter writer = new JsonTextWriter(sw))
-            //    {
-            //        serializer.Serialize(writer, packageRestoreData);
-            //    }
-            //}
-            //char[] delimiters = { '=' };
-
-            //var packageRestoreData = new PackageRestoreData
-            //{
-            //    RestoreOutputAbsolutePath = File.ReadLines(AssetsFlag).Take(1).Select(line =>
-            //        {
-            //            string[] ss = line.Split(delimiters, 2);
-            //            return (ss.Length == 2) ? ss[1] : string.Empty;
-            //        }).First(),
-            //    PackageImportOrder = File.ReadLines(AssetsFlag).Skip(1).Select(line =>
-            //        {
-            //            string[] ss = line.Split(delimiters, 2);
-            //            return (ss.Length == 2) ? new PackageIdentity(ss[0], new NuGetVersion(!string.IsNullOrWhiteSpace(ss[1]) ? ss[1] : "0.0.0")) : null;
-            //        })
-            //        .Where(x => x != null).ToList()
-            //};
-
-            return packageRestoreData;
+            return JsonConvert.DeserializeObject<PackageRestoreData>(File.ReadAllText(AssetsFlag));
         }
 
         /// <summary>

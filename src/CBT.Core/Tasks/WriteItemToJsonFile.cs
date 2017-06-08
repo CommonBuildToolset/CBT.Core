@@ -43,7 +43,7 @@ namespace CBT.Core.Tasks
                     .GetMetadata("value"),
                 PackageImportOrder = Input
                     .Where(i => i.ItemSpec.Equals("PackageReference", StringComparison.OrdinalIgnoreCase))
-                    .Select(i => new RestorePackage{Id = i.GetMetadata("id"), Version = i.GetMetadata("version") ?? "0.0.0"}).ToList()
+                    .Select(i => new RestorePackage(i.GetMetadata("id"), i.GetMetadata("version"))).ToList()
             };
             System.IO.File.WriteAllText(File, JsonConvert.SerializeObject(assetsFile, Formatting.Indented));
             return System.IO.File.Exists(File);
