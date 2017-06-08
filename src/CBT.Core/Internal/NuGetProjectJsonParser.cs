@@ -11,7 +11,7 @@ namespace CBT.Core.Internal
     /// </summary>
     internal sealed class NuGetProjectJsonParser : INuGetPackageConfigParser
     {
-        public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, string assetsFileDirectory)
+        public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, PackageRestoreData packageRestoreData)
         {
             VersionFolderPathResolver versionFolderPathResolver = new VersionFolderPathResolver(packagesPath);
 

@@ -213,59 +213,56 @@ namespace CBT.Core.UnitTests
             var target = _project.Targets.FirstOrDefault(i => i.Name.Equals("GenerateModuleAssetFlagFile", StringComparison.OrdinalIgnoreCase));
 
             target.Children.Count.ShouldBe(2);
-
             target.ShouldNotBe(null);
-
             target.Condition.ShouldBe(@" '$(RestoreOutputAbsolutePath)' != '' ");
-
             target.Inputs.ShouldBe(string.Empty);
-
             target.Outputs.ShouldBe(string.Empty);
-
             target.AfterTargets.ShouldBe("_GenerateRestoreProjectSpec");
-
             target.BeforeTargets.ShouldBe(string.Empty);
-
             target.DependsOnTargets.ShouldBe(string.Empty);
 
             var targetChildrenEnumerator = target.Children.GetEnumerator();
+            targetChildrenEnumerator.MoveNext();
+
+            var itemGroup = targetChildrenEnumerator.Current as ProjectItemGroupElement;
+            itemGroup.ShouldNotBe(null);
+            itemGroup.Children.Count.ShouldBe(3);
+
+            var itemEnumerator = itemGroup.Items.GetEnumerator();
+            itemEnumerator.MoveNext();
+            var item = itemEnumerator.Current;
+            item.ItemType.ShouldBe("RestoreAssetsFlagData");
+            item.Remove.ShouldBe("@(RestoreAssetsFlagData)");
+            itemEnumerator.MoveNext();
+            item = itemEnumerator.Current;
+            item.ItemType.ShouldBe("RestoreAssetsFlagData");
+            item.Include.ShouldBe("RestoreOutputAbsolutePath");
+            item.Metadata.Count.ShouldBe(1);
+            item.Metadata.First().Name.ShouldBe("value");
+            item.Metadata.First().Value.ShouldBe("$(RestoreOutputAbsolutePath)");
+            itemEnumerator.MoveNext();
+            item = itemEnumerator.Current;
+            item.ItemType.ShouldBe("RestoreAssetsFlagData");
+            item.Include.ShouldBe("PackageReference");
+            item.Metadata.Count.ShouldBe(2);
+            item.Metadata.First().Name.ShouldBe("id");
+            item.Metadata.First().Value.ShouldBe("%(PackageReference.Identity)");
+            item.Metadata.Last().Name.ShouldBe("version");
+            item.Metadata.Last().Value.ShouldBe("%(PackageReference.Version)");
+            itemEnumerator.Dispose();
 
             targetChildrenEnumerator.MoveNext();
 
-            var task = targetChildrenEnumerator.Current as ProjectTaskElement;
-            task.Name.ShouldBe("MakeDir");
-
-            task.ShouldNotBe(null);
-
-            task.Condition.ShouldBe(string.Empty);
-
-            task.Parameters.Count.ShouldBe(1);
-
-            task.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                {"Directories", "$([System.IO.Path]::GetDirectoryName($(CBTModuleNuGetAssetsFlagFile)))"},
-            });
-
-            targetChildrenEnumerator.MoveNext();
-
-            var task2 = targetChildrenEnumerator.Current as ProjectTaskElement;
-
-            task2.Name.ShouldBe("WriteLinesToFile");
-
-            task2.ShouldNotBe(null);
-
-            task2.Condition.ShouldBe(string.Empty);
-
-            task2.Parameters.Count.ShouldBe(3);
-
-            task2.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            var task1 = targetChildrenEnumerator.Current as ProjectTaskElement;
+            task1.ShouldNotBe(null);
+            task1.Name.ShouldBe("WriteAssetsFlagJsonFile");
+            task1.Condition.ShouldBe(string.Empty);
+            task1.Parameters.Count.ShouldBe(2);
+            task1.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 {"File", "$(CBTModuleNuGetAssetsFlagFile)"},
-                {"Lines", "$(RestoreOutputAbsolutePath)"},
-                {"Overwrite", "true"},
+                {"Input", "@(RestoreAssetsFlagData)"},
             });
-
-            task2.Location.ShouldBeGreaterThan(task.Location);
 
             targetChildrenEnumerator.Dispose();
         }
@@ -311,6 +308,11 @@ namespace CBT.Core.UnitTests
             valItemEnumerator.MoveNext();
             foreach (var item in _project.Items)
             {
+                // Ignore items not under projectroot
+                if (!(item.Parent.Parent is ProjectRootElement))
+                {
+                    continue;
+                }
                 var valItem = valItemEnumerator.Current;
                 valItem.ShouldNotBe(null);
                 if (item.ItemType.Equals(valItem.ItemType))
@@ -322,6 +324,7 @@ namespace CBT.Core.UnitTests
                 }
             }
             valItemEnumerator.Current.ShouldBe(null);
+            valItemEnumerator.Dispose();
         }
 
         private void MetadataShouldBe(IEnumerable<NameValueCondition> metadata, ProjectItemElement item, StringCompareShould stringCompareShould = StringCompareShould.IgnoreCase)
@@ -338,6 +341,7 @@ namespace CBT.Core.UnitTests
                 valMetadataEnumerator.MoveNext();
             }
             valMetadataEnumerator.Current.ShouldBe(null);
+            valMetadataEnumerator.Dispose();
         }
     }
 
