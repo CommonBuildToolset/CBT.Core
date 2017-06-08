@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CBT.Core.Internal;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Newtonsoft.Json;
-using NuGet.Packaging.Core;
-using NuGet.Versioning;
 
 namespace CBT.Core.Tasks
 {

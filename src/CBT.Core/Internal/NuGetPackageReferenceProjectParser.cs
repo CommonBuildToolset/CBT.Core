@@ -51,7 +51,7 @@ namespace CBT.Core.Internal
                                   lib.Version.ToString().Equals(pkg.Version, StringComparison.OrdinalIgnoreCase)).Select(lib => lib.Dependencies).SelectMany(p => p.Select(i => i));
                 foreach (PackageDependency dependency in dependencies)
                 {
-                    // In the <PackageReference scenario nuget will only install one packageId.  If you have two packages that reference different package versions of a third package then it will choose the common highest version and if there is no common version it will error.  If you have two packages listed with two different versions it will choose the latest version and silently not install the other.
+                    // In the <PackageReference scenario nuget will only install one packageId.  If you have two packages that reference different package versions of a third package then it will choose the common highest version and if there is no common version it will error.  If you have two packages listed with two different versions it will choose the first entry and silently not install the other.
                     // If the package is already processed then skip.  If the package is explicitly added then skip to use that order.
                     if (!processedPackages.Contains($"{dependency.Id}") && !packageRestoreData.PackageImportOrder.Any(pio => pio.Id.Equals($"{dependency.Id}", StringComparison.OrdinalIgnoreCase)))
                     {

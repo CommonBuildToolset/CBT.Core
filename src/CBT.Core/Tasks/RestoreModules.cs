@@ -2,7 +2,6 @@
 using Microsoft.Build.Framework;
 using NuGet.Configuration;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,9 +9,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using NuGet.Packaging.Core;
-using NuGet.Versioning;
 
 namespace CBT.Core.Tasks
 {
