@@ -444,7 +444,7 @@ namespace CBT.Core.Tasks
                 },
             })
             {
-                process.StartInfo.EnvironmentVariables.Add("RestoreCBTModules", "false");
+                process.StartInfo.EnvironmentVariables["RestoreCBTModules"] = "false";
                 process.ErrorDataReceived += (sender, args) =>
                 {
                     if (!String.IsNullOrWhiteSpace(args?.Data))
