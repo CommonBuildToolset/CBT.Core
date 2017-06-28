@@ -38,6 +38,12 @@ namespace CBT.Core.Tasks
             }
             PackageRestoreData assetsFile = new PackageRestoreData
             {
+                ProjectJsonPath = Input
+                    .First(i => i.ItemSpec.Equals("ProjectJsonPath", StringComparison.OrdinalIgnoreCase))
+                    .GetMetadata("value"),
+                RestoreProjectStyle = Input
+                    .First(i => i.ItemSpec.Equals("RestoreProjectStyle", StringComparison.OrdinalIgnoreCase))
+                    .GetMetadata("value"),
                 RestoreOutputAbsolutePath = Input
                     .First(i => i.ItemSpec.Equals("RestoreOutputAbsolutePath", StringComparison.OrdinalIgnoreCase))
                     .GetMetadata("value"),
