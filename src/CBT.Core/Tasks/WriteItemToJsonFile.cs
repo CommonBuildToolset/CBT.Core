@@ -38,8 +38,14 @@ namespace CBT.Core.Tasks
             }
             PackageRestoreData assetsFile = new PackageRestoreData
             {
+                ProjectJsonPath = Input
+                    .FirstOrDefault(i => i.ItemSpec.Equals("ProjectJsonPath", StringComparison.OrdinalIgnoreCase))?
+                    .GetMetadata("value"),
+                RestoreProjectStyle = Input
+                    .FirstOrDefault(i => i.ItemSpec.Equals("RestoreProjectStyle", StringComparison.OrdinalIgnoreCase))?
+                    .GetMetadata("value"),
                 RestoreOutputAbsolutePath = Input
-                    .First(i => i.ItemSpec.Equals("RestoreOutputAbsolutePath", StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault(i => i.ItemSpec.Equals("RestoreOutputAbsolutePath", StringComparison.OrdinalIgnoreCase))?
                     .GetMetadata("value"),
                 PackageImportOrder = Input
                     .Where(i => i.ItemSpec.Equals("PackageReference", StringComparison.OrdinalIgnoreCase))

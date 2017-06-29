@@ -140,6 +140,12 @@
   <Target Name="GenerateModuleAssetFlagFile" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(RestoreOutputAbsolutePath)' != '' " >
     <ItemGroup>
       <RestoreAssetsFlagData Remove="@(RestoreAssetsFlagData)"/>
+      <RestoreAssetsFlagData Include="ProjectJsonPath">
+        <value>$(_CurrentProjectJsonPath)</value>
+      </RestoreAssetsFlagData>
+      <RestoreAssetsFlagData Include="RestoreProjectStyle">
+        <value>$(RestoreProjectStyle)</value>
+      </RestoreAssetsFlagData>
       <RestoreAssetsFlagData Include="RestoreOutputAbsolutePath">
         <value>$(RestoreOutputAbsolutePath)</value>
       </RestoreAssetsFlagData>

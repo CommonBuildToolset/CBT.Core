@@ -231,13 +231,30 @@ namespace CBT.Core.UnitTests
 
             var itemGroup = targetChildrenEnumerator.Current as ProjectItemGroupElement;
             itemGroup.ShouldNotBe(null);
-            itemGroup.Children.Count.ShouldBe(3);
+            itemGroup.Children.Count.ShouldBe(5);
 
             var itemEnumerator = itemGroup.Items.GetEnumerator();
             itemEnumerator.MoveNext();
             var item = itemEnumerator.Current;
             item.ItemType.ShouldBe("RestoreAssetsFlagData");
             item.Remove.ShouldBe("@(RestoreAssetsFlagData)");
+
+            itemEnumerator.MoveNext();
+            item = itemEnumerator.Current;
+            item.ItemType.ShouldBe("RestoreAssetsFlagData");
+            item.Include.ShouldBe("ProjectJsonPath");
+            item.Metadata.Count.ShouldBe(1);
+            item.Metadata.First().Name.ShouldBe("value");
+            item.Metadata.First().Value.ShouldBe("$(_CurrentProjectJsonPath)");
+
+            itemEnumerator.MoveNext();
+            item = itemEnumerator.Current;
+            item.ItemType.ShouldBe("RestoreAssetsFlagData");
+            item.Include.ShouldBe("RestoreProjectStyle");
+            item.Metadata.Count.ShouldBe(1);
+            item.Metadata.First().Name.ShouldBe("value");
+            item.Metadata.First().Value.ShouldBe("$(RestoreProjectStyle)");
+
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
             item.ItemType.ShouldBe("RestoreAssetsFlagData");
@@ -245,6 +262,7 @@ namespace CBT.Core.UnitTests
             item.Metadata.Count.ShouldBe(1);
             item.Metadata.First().Name.ShouldBe("value");
             item.Metadata.First().Value.ShouldBe("$(RestoreOutputAbsolutePath)");
+
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
             item.ItemType.ShouldBe("RestoreAssetsFlagData");
