@@ -48,7 +48,7 @@ namespace CBT.Core.Tasks
                     .FirstOrDefault(i => i.ItemSpec.Equals("RestoreOutputAbsolutePath", StringComparison.OrdinalIgnoreCase))?
                     .GetMetadata("value"),
                 PackageImportOrder = Input
-                    .Where(i => i.ItemSpec.Equals("PackageReference", StringComparison.OrdinalIgnoreCase))
+                    .Where(i => i.ItemSpec.Equals("PackageReference", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(i.GetMetadata("id")))
                     .Select(i => new RestorePackage(i.GetMetadata("id"), i.GetMetadata("version"))).ToList()
             };
             System.IO.File.WriteAllText(File, JsonConvert.SerializeObject(assetsFile, Formatting.Indented));
