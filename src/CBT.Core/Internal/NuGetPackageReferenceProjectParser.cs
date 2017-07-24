@@ -46,12 +46,12 @@ namespace CBT.Core.Internal
 
             foreach (var pkg in packageRestoreData.PackageImportOrder)
             {
+                // In <PackageReference only one version of a nuGet package will be installed.  That version may not be the one specified in the <PackageReference item.  So we can not match the version specified in the cbtmodules project with the version actually installed.  If we want to do any such mathcing it would simply need to result in a build error.
                 var dependencies = lockFile.Targets.First().Libraries
-                    .Where(lib => lib.Name.Equals(pkg.Id, StringComparison.OrdinalIgnoreCase) &&
-                                  lib.Version.ToString().Equals(pkg.Version, StringComparison.OrdinalIgnoreCase)).Select(lib => lib.Dependencies).SelectMany(p => p.Select(i => i));
+                    .Where(lib => lib.Name.Equals(pkg.Id, StringComparison.OrdinalIgnoreCase)).Select(lib => lib.Dependencies).SelectMany(p => p.Select(i => i));
                 foreach (PackageDependency dependency in dependencies)
                 {
-                    // In the <PackageReference scenario nuget will only install one packageId.  If you have two packages that reference different package versions of a third package then it will choose the common highest version and if there is no common version it will error.  If you have two packages listed with two different versions it will choose the first entry and silently not install the other.
+                    // In the <PackageReference scenario nuGet will only install one packageId.  If you have two packages that reference different package versions of a third package then it will choose the common highest version and if there is no common version it will error.  If you have two packages listed with two different versions it will choose the first entry and silently not install the other.
                     // If the package is already processed then skip.  If the package is explicitly added then skip to use that order.
                     if (!processedPackages.Contains(dependency.Id, StringComparer.OrdinalIgnoreCase) && !packageRestoreData.PackageImportOrder.Any(pio => pio.Id.Equals(dependency.Id, StringComparison.OrdinalIgnoreCase)))
                     {
