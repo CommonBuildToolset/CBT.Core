@@ -43,6 +43,7 @@ namespace CBT.Core.UnitTests
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'project.json'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\project.json') "),
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'packages.config'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\packages.config') "),
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'packages.config'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\packages.config') "),
+                new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::GetFullPath($({0})))", @" '$({0})' != '' "),
                 new Property("CBTPackagesFallbackPath", @"$([System.IO.Path]::Combine($(SolutionDir), 'packages'))", @" '$({0})' == '' And '$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*' And Exists('$(SolutionDir)')"),
                 new Property("CBTPackagesFallbackPath", @"$([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($(MSBuildProjectDirectory))), 'packages'))", defaultCondition),
                 new Property("CBTCoreAssemblyPath", @"$(MSBuildThisFileDirectory)CBT.Core.dll", defaultCondition),
@@ -221,7 +222,7 @@ namespace CBT.Core.UnitTests
             // ReSharper disable once PossibleNullReferenceException
             target.Children.Count.ShouldBe(2);
             target.ShouldNotBe(null);
-            target.Condition.ShouldBe(@" '$(RestoreOutputAbsolutePath)' != '' ");
+            target.Condition.ShouldBe(@" '$(RestoreOutputAbsolutePath)' != '' And '$(MSBuildProjectFullPath)' == '$(CBTModulePackageConfigPath)' ");
             target.Inputs.ShouldBe(string.Empty);
             target.Outputs.ShouldBe(string.Empty);
             target.AfterTargets.ShouldBe("_GenerateRestoreProjectSpec");

@@ -5,7 +5,7 @@
     <TargetFramework Condition=" '$(TargetFramework)' == '' ">net45</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MSBuild.Traversal" version="1.0.6-rc1-ga1698990ac" />
+    <PackageReference Include="MSBuild.Traversal" version="1.0.7-rc1-g01f92d5de4" />
     <ProjectReference Include="**\*.??proj" Exclude="$(MSBuildThisFileFullPath)" />
   </ItemGroup>
 </Project>
