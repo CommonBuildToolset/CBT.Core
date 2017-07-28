@@ -30,6 +30,7 @@
     <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\project.json') ">$([System.IO.Path]::Combine($(CBTLocalPath), 'project.json'))</CBTModulePackageConfigPath>
     <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\packages.config') ">$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'packages.config'))</CBTModulePackageConfigPath>
     <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\packages.config') ">$([System.IO.Path]::Combine($(CBTLocalPath), 'packages.config'))</CBTModulePackageConfigPath>
+    <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' != '' ">$([System.IO.Path]::GetFullPath($(CBTModulePackageConfigPath)))</CBTModulePackageConfigPath>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(CBTModulePackageConfigPath)' != '' And '$([System.IO.Path]::GetFileName($(CBTModulePackageConfigPath)))' == 'packages.config' ">
@@ -151,7 +152,7 @@
   </Target>
 
   <!-- _GenerateRestoreProjectSpec is a from the nuget.targets new to nuget 4.x. -->
-  <Target Name="GenerateModuleAssetFlagFile" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(RestoreOutputAbsolutePath)' != '' " >
+  <Target Name="GenerateModuleAssetFlagFile" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(RestoreOutputAbsolutePath)' != '' And '$(MSBuildProjectFullPath)' == '$(CBTModulePackageConfigPath)' " >
     <ItemGroup>
       <RestoreAssetsFlagData Remove="@(RestoreAssetsFlagData)"/>
       <RestoreAssetsFlagData Include="ProjectJsonPath">
