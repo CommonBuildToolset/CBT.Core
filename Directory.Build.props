@@ -13,6 +13,18 @@
     <CBTModuleRestoreCommand>$(EnlistmentRoot)\.build\local\NuGet\NuGet.exe</CBTModuleRestoreCommand>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" Exists('$(EnlistmentRoot)\version.json') ">
+    <EnableNerdbank_GitVersioning Condition=" '$(EnableNerdbank_GitVersioning)' == '' ">true</EnableNerdbank_GitVersioning>
+    <Product>Common Build Toolset (CBT)</Product>
+    <Company>$(Product)</Company>
+    <Copyright>Copyright © 2016</Copyright>
+    <Description>$(Product)</Description>
+    <!-- disable stock msbuild version generation can not use GenerateAssemblyInfo since this is used by Nerdbank.GitVersioning as well-->
+    <GenerateAssemblyFileVersionAttribute Condition="'$(GenerateAssemblyFileVersionAttribute)' == ''">false</GenerateAssemblyFileVersionAttribute>
+    <GenerateAssemblyInformationalVersionAttribute Condition="'$(GenerateAssemblyInformationalVersionAttribute)' == ''">false</GenerateAssemblyInformationalVersionAttribute>
+    <GenerateAssemblyVersionAttribute Condition="'$(GenerateAssemblyVersionAttribute)' == ''">false</GenerateAssemblyVersionAttribute>
+  </PropertyGroup>
+
   <PropertyGroup Condition=" '$(MSBuildProjectExtension)' == '.csproj' And '$(Configuration)' == 'Debug' ">
     <DebugType Condition=" '$(DebugType)' == '' Or '$(DebugType)' == 'portable' ">full</DebugType>
   </PropertyGroup>
