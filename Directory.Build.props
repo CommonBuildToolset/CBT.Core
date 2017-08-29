@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
@@ -15,9 +15,10 @@
 
   <PropertyGroup Condition=" Exists('$(EnlistmentRoot)\version.json') ">
     <EnableNerdbank_GitVersioning Condition=" '$(EnableNerdbank_GitVersioning)' == '' ">true</EnableNerdbank_GitVersioning>
-    <AssemblyProduct>Common Build Toolset (CBT)</AssemblyProduct>
-    <AssemblyCompany>$(AssemblyProduct)</AssemblyCompany>
-    <AssemblyCopyright>Copyright © 2016</AssemblyCopyright>
+    <Product>Common Build Toolset (CBT)</Product>
+    <Company>$(Product)</Company>
+    <Copyright>Copyright � 2016</Copyright>
+    <Description>$(Product)</Description>
     <!-- disable stock msbuild version generation can not use GenerateAssemblyInfo since this is used by Nerdbank.GitVersioning as well-->
     <GenerateAssemblyFileVersionAttribute Condition="'$(GenerateAssemblyFileVersionAttribute)' == ''">false</GenerateAssemblyFileVersionAttribute>
     <GenerateAssemblyInformationalVersionAttribute Condition="'$(GenerateAssemblyInformationalVersionAttribute)' == ''">false</GenerateAssemblyInformationalVersionAttribute>
