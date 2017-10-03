@@ -18,5 +18,5 @@
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
-  <Import Project="$(MSBuildProjectDirectory)\ILMerge.targets" />
+  <Import Project="$(MSBuildProjectDirectory)\ILMerge.targets" Condition=" '$(DesignTimeBuild)' != 'true' " />
 </Project>
