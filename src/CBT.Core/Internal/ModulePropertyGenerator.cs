@@ -25,7 +25,6 @@ namespace CBT.Core.Internal
             : this(new List<INuGetPackageConfigParser>
             {
                 new NuGetPackagesConfigParser(),
-                new NuGetProjectJsonParser(),
                 new NuGetPackageReferenceProjectParser(logHelper)
             }, packagesPath, packageRestoreData, packageConfigPaths)
         {

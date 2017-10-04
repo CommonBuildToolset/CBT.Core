@@ -30,8 +30,6 @@ namespace CBT.Core.UnitTests
         private readonly string _projectPackageReferencePath;
         private readonly string _packagesConfigPath;
         private readonly string _packagesPath;
-        private readonly string _projectJsonPath;
-        private readonly string _projectLockFilePath;
         private readonly PackageRestoreData _packageRestoreData;
         private readonly string _v1PackagePath = @"CBT\Module";
 
@@ -39,8 +37,6 @@ namespace CBT.Core.UnitTests
         {
             _projectPackageReferencePath = GetFilePath("PackageReference.csproj");
             _packagesConfigPath = GetFilePath("packages.config");
-            _projectJsonPath = GetFilePath("project.json");
-            _projectLockFilePath = GetFilePath("project.lock.json");
             _packagesPath = GetFilePath("packages");
 
             _packages = new List<PackageIdentity>
@@ -89,33 +85,6 @@ namespace CBT.Core.UnitTests
                             new XAttribute("version", i.Version)))
                 )).Save(_packagesConfigPath);
 
-            // Write out a project.json
-            //
-            File.WriteAllText(_projectJsonPath, $@"
-                {{
-                  ""dependencies"": {{
-                    {String.Join($",{Environment.NewLine}    ", _packages.Select(i => $"\"{i.Id}\": \"{i.Version}\""))}
-                  }},
-                  ""frameworks"": {{
-                    ""net45"": {{}}
-                  }},
-                  ""runtimes"": {{
-                    ""win"": {{}}
-                  }}
-                }}");
-
-            // Write out a project.lock.json file
-            //
-            new LockFileFormat().Write(_projectLockFilePath, new LockFile
-            {
-                Version = 1,
-                Libraries = _packages.Select(i => new LockFileLibrary
-                {
-                    Name = i.Id,
-                    Version = i.Version,
-                }).ToList(),
-            });
-
             // Write out a project.assests.json file
             //
             new LockFileFormat().Write(Path.Combine(_packageRestoreData.RestoreOutputAbsolutePath, "project.assets.json"), new LockFile
@@ -144,12 +113,6 @@ namespace CBT.Core.UnitTests
         }
 
         [Fact]
-        public void V1ModulePropertiesAreCreatedProjectJson()
-        {
-            VerifyModulePropertiesAreCreated(_projectJsonPath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
-        }
-
-        [Fact]
         public void V1ModulePropertiesAreCreatedPackageReference()
         {
             VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath, false);
@@ -160,13 +123,7 @@ namespace CBT.Core.UnitTests
         {
             VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
         }
-
-        [Fact]
-        public void ModulePropertiesAreCreatedProjectJson()
-        {
-            VerifyModulePropertiesAreCreated(_projectJsonPath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
-        }
-
+        
         [Fact]
         public void ModulePropertiesAreCreatedPackageReference()
         {
@@ -184,16 +141,6 @@ namespace CBT.Core.UnitTests
         }
 
         [Fact]
-        public void NuGetProjectJsonParserTest()
-        {
-            NuGetProjectJsonParser configParser = new NuGetProjectJsonParser();
-
-            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectJsonPath, null).ToList();
-
-            actualPackages.ShouldBe(_packages);
-        }
-
-        [Fact]
         public void NuGetPackageReferenceProjectParserTest()
         {
             NuGetPackageReferenceProjectParser configParser = new NuGetPackageReferenceProjectParser(null);
@@ -205,7 +152,6 @@ namespace CBT.Core.UnitTests
             actualPackages.ShouldBe(packagesIdentities);
         }
 
-        
         private void VerifyModulePropertiesAreCreated(string packageConfig, Func<PackageIdentity, string> packageFolderFunc, string moduleConfigPath, string importRelativePath, bool lastDefinedPackageWins=true)
         {
             bool v1Package = importRelativePath.Equals(_v1PackagePath, StringComparison.OrdinalIgnoreCase);
@@ -266,7 +212,7 @@ namespace CBT.Core.UnitTests
 
             project.ShouldNotBeNull();
 
-            IEnumerable<PackageIdentity> packagesIdentities = null;
+            IEnumerable<PackageIdentity> packagesIdentities;
             if (lastDefinedPackageWins)
             {
                 packagesIdentities = _packages.Reverse();
@@ -293,7 +239,7 @@ namespace CBT.Core.UnitTests
                 propertyElement.Value.ShouldBe(item.Item2, StringCompareShould.IgnoreCase);
             }
 
-            IEnumerable<PackageIdentity> pkgIdentities = null;
+            IEnumerable<PackageIdentity> pkgIdentities;
             if (lastDefinedPackageWins)
             {
                 pkgIdentities = _packages;
@@ -327,7 +273,7 @@ namespace CBT.Core.UnitTests
 
                 ProjectRootElement extensionProject = ProjectRootElement.Open(extensionPath);
 
-                IEnumerable<PackageIdentity> extensionPkgIdentities = null;
+                IEnumerable<PackageIdentity> extensionPkgIdentities;
                 if (lastDefinedPackageWins)
                 {
                     extensionPkgIdentities = _packages;
@@ -348,7 +294,7 @@ namespace CBT.Core.UnitTests
                     : expectedImportsV2.Count();
                 extensionProject.Imports.Count.ShouldBe(expectedProjectImportsCount);
 
-                IEnumerable<PackageIdentity> importPkgIdentities = null;
+                IEnumerable<PackageIdentity> importPkgIdentities;
                 if (lastDefinedPackageWins)
                 {
                     importPkgIdentities = _packages;
