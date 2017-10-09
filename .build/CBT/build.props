@@ -98,7 +98,7 @@
     <CBTParseError Condition=" '$(CBTModulesRestored)' == 'false' " Include="Modules were not restored and the build cannot continue.  Refer to other errors for more information.">
       <Code>CBT1001</Code>
     </CBTParseError>
-    <CBTParseError Condition=" '$(CBTModulePackageConfigPath)' == '' " Include="The CBT module configuration file packages.config or CBTModules.proj was not found under $(CBTLocalPath) or $(CBTLocalPath)\CBTModules.  Please add a CBT module package configuration file or set the property 'CBTModulePackageConfigPath' to a your custom location.">
+    <CBTParseError Condition=" '$(CBTModulePackageConfigPath)' == '' " Include="The CBT module configuration file packages.config or CBTModules.proj was not found under $(CBTLocalPath) or $(CBTLocalPath)\CBTModules.  Please add a CBT module package configuration file or set the property 'CBTModulePackageConfigPath' to your custom location.">
       <Code>CBT1002</Code>
     </CBTParseError>
   </ItemGroup>

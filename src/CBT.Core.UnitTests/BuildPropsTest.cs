@@ -110,7 +110,7 @@ namespace CBT.Core.UnitTests
             items.Add(new Items
             {
                 ItemType = "CBTParseError",
-                Include = "The CBT module configuration file packages.config or CBTModules.proj was not found under $(CBTLocalPath) or $(CBTLocalPath)\\CBTModules.  Please add a CBT module package configuration file or set the property 'CBTModulePackageConfigPath' to a your custom location.",
+                Include = "The CBT module configuration file packages.config or CBTModules.proj was not found under $(CBTLocalPath) or $(CBTLocalPath)\\CBTModules.  Please add a CBT module package configuration file or set the property 'CBTModulePackageConfigPath' to your custom location.",
                 Condition = " '$(CBTModulePackageConfigPath)' == '' ",
                 Metadata = new List<NameValueCondition>
                 {
