@@ -26,8 +26,6 @@
   <PropertyGroup>
     <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\CBTModules.proj') ">$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'CBTModules.proj'))</CBTModulePackageConfigPath>
     <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules.proj') ">$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules.proj'))</CBTModulePackageConfigPath>
-    <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\project.json') ">$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'project.json'))</CBTModulePackageConfigPath>
-    <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\project.json') ">$([System.IO.Path]::Combine($(CBTLocalPath), 'project.json'))</CBTModulePackageConfigPath>
     <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\packages.config') ">$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'packages.config'))</CBTModulePackageConfigPath>
     <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\packages.config') ">$([System.IO.Path]::Combine($(CBTLocalPath), 'packages.config'))</CBTModulePackageConfigPath>
     <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' != '' ">$([System.IO.Path]::GetFullPath($(CBTModulePackageConfigPath)))</CBTModulePackageConfigPath>
@@ -46,15 +44,6 @@
     -->
     <CBTPackagesFallbackPath Condition=" '$(CBTPackagesFallbackPath)' == '' And '$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*' And Exists('$(SolutionDir)')">$([System.IO.Path]::Combine($(SolutionDir), 'packages'))</CBTPackagesFallbackPath>
     <CBTPackagesFallbackPath Condition=" '$(CBTPackagesFallbackPath)' == '' ">$([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($(MSBuildProjectDirectory))), 'packages'))</CBTPackagesFallbackPath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(CBTModulePackageConfigPath)' != '' And '$([System.IO.Path]::GetFileName($(CBTModulePackageConfigPath)))' == 'project.json' ">
-    <!--
-      For NuGet v3 / project.json the package path is determined in the following order:
-      - User specified at the command line
-      - The value of the %NUGET_PACKAGES% environment variable
-      - In a NuGet.config via the globalPackagesFolder
-    -->
   </PropertyGroup>
 
   <PropertyGroup>
@@ -109,7 +98,7 @@
     <CBTParseError Condition=" '$(CBTModulesRestored)' == 'false' " Include="Modules were not restored and the build cannot continue.  Refer to other errors for more information.">
       <Code>CBT1001</Code>
     </CBTParseError>
-    <CBTParseError Condition=" '$(CBTModulePackageConfigPath)' == '' " Include="The CBT modules packages.config or project.json file was not found under $(CBTLocalPath) or $(CBTLocalPath)\CBTModules.  Please add a cbt modules packages file or set the property 'CBTModulePackageConfigPath' to a custom module packages file.">
+    <CBTParseError Condition=" '$(CBTModulePackageConfigPath)' == '' " Include="The CBT module configuration file packages.config or CBTModules.proj was not found under $(CBTLocalPath) or $(CBTLocalPath)\CBTModules.  Please add a CBT module package configuration file or set the property 'CBTModulePackageConfigPath' to your custom location.">
       <Code>CBT1002</Code>
     </CBTParseError>
   </ItemGroup>

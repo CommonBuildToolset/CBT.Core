@@ -1,13 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.12
+VisualStudioVersion = 15.0.26927.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CBT.Core", "CBT.Core\CBT.Core.csproj", "{3B843D72-26A8-4A77-B9D2-E90D1C5D521D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CBT.Core", "CBT.Core\CBT.Core.csproj", "{3B843D72-26A8-4A77-B9D2-E90D1C5D521D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".build", ".build", "{B42133CC-7B5A-4546-91E9-C03C6A78454B}"
 	ProjectSection(SolutionItems) = preProject
 		..\Directory.Build.props = ..\Directory.Build.props
+		..\version.json = ..\version.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CBT", "CBT", "{9B4BA404-B156-4ADE-BF17-9E232525402E}"
@@ -22,7 +23,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CBTModules", "CBTModules", 
 		..\.build\local\CBTModules\CBTModules.proj = ..\.build\local\CBTModules\CBTModules.proj
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CBT.Core.UnitTests", "CBT.Core.UnitTests\CBT.Core.UnitTests.csproj", "{85318209-7822-487F-BBC6-CEC5E5E3E167}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CBT.Core.UnitTests", "CBT.Core.UnitTests\CBT.Core.UnitTests.csproj", "{85318209-7822-487F-BBC6-CEC5E5E3E167}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,5 +47,8 @@ Global
 		{9B4BA404-B156-4ADE-BF17-9E232525402E} = {B42133CC-7B5A-4546-91E9-C03C6A78454B}
 		{02A3180C-04D3-44DD-887B-CA5D6C251BF0} = {B42133CC-7B5A-4546-91E9-C03C6A78454B}
 		{578F8547-A15D-4DF0-ABD3-0FAA988F07D1} = {02A3180C-04D3-44DD-887B-CA5D6C251BF0}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {97DD6508-99AE-4CC3-8071-411BEE223BDD}
 	EndGlobalSection
 EndGlobal

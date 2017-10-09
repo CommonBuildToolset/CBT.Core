@@ -39,8 +39,6 @@ namespace CBT.Core.UnitTests
                 new Property("Platform", @"$(DefaultProjectPlatform)", @" '$({0})' == '' And '$(DefaultProjectPlatform)' != '' "),
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'CBTModules.proj'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\CBTModules.proj') "),
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules.proj'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules.proj') "),
-                new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'project.json'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\project.json') "),
-                new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'project.json'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\project.json') "),
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'packages.config'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\packages.config') "),
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'packages.config'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\packages.config') "),
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::GetFullPath($({0})))", @" '$({0})' != '' "),
@@ -112,7 +110,7 @@ namespace CBT.Core.UnitTests
             items.Add(new Items
             {
                 ItemType = "CBTParseError",
-                Include = "The CBT modules packages.config or project.json file was not found under $(CBTLocalPath) or $(CBTLocalPath)\\CBTModules.  Please add a cbt modules packages file or set the property 'CBTModulePackageConfigPath' to a custom module packages file.",
+                Include = "The CBT module configuration file packages.config or CBTModules.proj was not found under $(CBTLocalPath) or $(CBTLocalPath)\\CBTModules.  Please add a CBT module package configuration file or set the property 'CBTModulePackageConfigPath' to your custom location.",
                 Condition = " '$(CBTModulePackageConfigPath)' == '' ",
                 Metadata = new List<NameValueCondition>
                 {
