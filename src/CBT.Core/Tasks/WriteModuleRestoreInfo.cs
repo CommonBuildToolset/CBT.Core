@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace CBT.Core.Tasks
 {
-    public class WriteAssetsFlagJsonFile : ITask
+    public class WriteModuleRestoreInfo : ITask
     {
 
         [Required]
@@ -32,11 +32,13 @@ namespace CBT.Core.Tasks
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(File));
             }
+
             if (System.IO.File.Exists(File))
             {
                 System.IO.File.Delete(File);
             }
-            PackageRestoreData assetsFile = new PackageRestoreData
+
+            ModuleRestoreInfo assetsFile = new ModuleRestoreInfo
             {
                 ProjectJsonPath = Input
                     .FirstOrDefault(i => i.ItemSpec.Equals("ProjectJsonPath", StringComparison.OrdinalIgnoreCase))?

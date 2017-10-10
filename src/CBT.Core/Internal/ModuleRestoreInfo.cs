@@ -13,7 +13,7 @@ namespace CBT.Core.Internal
         public string Version { get; }
     }
 
-    internal class PackageRestoreData
+    internal class ModuleRestoreInfo
     {
         public string RestoreOutputAbsolutePath { get; set; }
 

@@ -20,22 +20,21 @@ namespace CBT.Core.Internal
         {
             _log = logger;
         }
-
-        public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, PackageRestoreData packageRestoreData)
+        public IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, ModuleRestoreInfo moduleRestoreInfo)
         {
             // This assumes that if it is a non packages.config or project.json being restored that it is a msbuild project using the new PackageReference.  
             if (ProjectJsonPathUtilities.IsProjectConfig(packageConfigPath) || packageConfigPath.EndsWith(NuGet.ProjectManagement.Constants.PackageReferenceFile, StringComparison.OrdinalIgnoreCase))
             {
                 yield break;
             }
-            if (string.IsNullOrWhiteSpace(packageRestoreData?.RestoreOutputAbsolutePath))
+            if (string.IsNullOrWhiteSpace(moduleRestoreInfo?.RestoreOutputAbsolutePath))
             {
-                _log.LogWarning($"Missing expected assets file directory.  This is typically because the flag generated at $(CBTModuleNuGetAssetsFlagFile) does not exist or is empty.  Ensure the GenerateModuleAssetFlagFile target is running. It may also be because the CBTModules.proj does not import CBT build.props in some fashion.");
+                _log.LogWarning("Missing expected assets file directory.  Ensure that you are using NuGet v4 or above.");
                 yield break;
             }
             VersionFolderPathResolver versionFolderPathResolver = new VersionFolderPathResolver(packagesPath);
 
-            string lockFilePath = Path.Combine(packageRestoreData.RestoreOutputAbsolutePath, LockFileFormat.AssetsFileName);
+            string lockFilePath = Path.Combine(moduleRestoreInfo.RestoreOutputAbsolutePath, LockFileFormat.AssetsFileName);
 
             if (!File.Exists(lockFilePath))
             {
@@ -46,7 +45,7 @@ namespace CBT.Core.Internal
 
             LockFile lockFile = LockFileUtilities.GetLockFile(lockFilePath, NullLogger.Instance);
 
-            foreach (var pkg in packageRestoreData.PackageImportOrder)
+            foreach (var pkg in moduleRestoreInfo.PackageImportOrder)
             {
                 // In <PackageReference only one version of a nuGet package will be installed.  That version may not be the one specified in the <PackageReference item.  So we can not match the version specified in the CBTModules project with the version actually installed.  If we want to do any such matching it would simply need to result in a build error.
                 var dependencies = lockFile.Targets.First().Libraries
@@ -55,7 +54,7 @@ namespace CBT.Core.Internal
                 {
                     // In the <PackageReference scenario nuGet will only install one packageId.  If you have two packages that reference different package versions of a third package then it will choose the common highest version and if there is no common version it will error.  If you have two packages listed with two different versions it will choose the first entry and silently not install the other.
                     // If the package is already processed then skip.  If the package is explicitly added then skip to use that order.
-                    if (!processedPackages.Contains(dependency.Id, StringComparer.OrdinalIgnoreCase) && !packageRestoreData.PackageImportOrder.Any(pio => pio.Id.Equals(dependency.Id, StringComparison.OrdinalIgnoreCase)))
+                    if (!processedPackages.Contains(dependency.Id, StringComparer.OrdinalIgnoreCase) && !moduleRestoreInfo.PackageImportOrder.Any(pio => pio.Id.Equals(dependency.Id, StringComparison.OrdinalIgnoreCase)))
                     {
                         var installedPackage = lockFile.Libraries
                             .First(lockPkg => lockPkg.Name.Equals(dependency.Id, StringComparison.OrdinalIgnoreCase));
