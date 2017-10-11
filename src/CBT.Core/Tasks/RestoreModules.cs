@@ -412,7 +412,9 @@ namespace CBT.Core.Tasks
                 RestoreCommandArguments = $"{RestoreCommandArguments} -PackagesDirectory \"{PackagesPath}\"";
             }
 
-            string moduleRestoreInfoFile = Path.GetTempFileName();
+            bool isPackagesConfig = PackageConfig.EndsWith("packages.config", StringComparison.OrdinalIgnoreCase);
+
+            string moduleRestoreInfoFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tmp");
 
             using (ManualResetEvent processExited = new ManualResetEvent(false))
             using (Process process = new Process
@@ -432,7 +434,11 @@ namespace CBT.Core.Tasks
             })
             {
                 process.StartInfo.EnvironmentVariables["RestoreCBTModules"] = "false";
-                process.StartInfo.EnvironmentVariables["CBTModuleRestoreInfoFile"] = moduleRestoreInfoFile;
+
+                if (!isPackagesConfig)
+                {
+                    process.StartInfo.EnvironmentVariables["CBTModuleRestoreInfoFile"] = moduleRestoreInfoFile;
+                }
 
                 process.ErrorDataReceived += (sender, args) =>
                 {
@@ -479,21 +485,24 @@ namespace CBT.Core.Tasks
                         throw new Exception("Restoring CBT modules failed because of one or more errors.  More information about the problem including the output of the restoration command is available when the log verbosity is set to Detailed.");
                     }
 
-                    if (PackageConfig.EndsWith("packages.config", StringComparison.OrdinalIgnoreCase))
+                    if (isPackagesConfig)
                     {
                         moduleRestoreInfo = new ModuleRestoreInfo
                         {
                             RestoreProjectStyle = "PackagesConfig",
                         };
                     }
-                    else if (!File.Exists(moduleRestoreInfoFile))
+                    else
                     {
-                        _log.LogError($"The NuGet restore data file '{moduleRestoreInfoFile}' does not exist.  Ensure that your '{PackageConfig}' project is using PackageReference elements and that you are using NuGet.exe v4 or later.");
+                        if (!File.Exists(moduleRestoreInfoFile))
+                        {
+                            _log.LogError($"The NuGet restore data file '{moduleRestoreInfoFile}' does not exist.  Ensure that your '{PackageConfig}' project is using PackageReference elements and that you are using NuGet.exe v4 or later.");
 
-                        return false;
+                            return false;
+                        }
+
+                        moduleRestoreInfo = JsonConvert.DeserializeObject<ModuleRestoreInfo>(File.ReadAllText(moduleRestoreInfoFile));
                     }
-
-                    moduleRestoreInfo = JsonConvert.DeserializeObject<ModuleRestoreInfo>(File.ReadAllText(moduleRestoreInfoFile));
 
                     return true;
                 }
@@ -510,7 +519,7 @@ namespace CBT.Core.Tasks
                     }
                 }
 
-                if (File.Exists(moduleRestoreInfoFile))
+                if (isPackagesConfig && File.Exists(moduleRestoreInfoFile))
                 {
                     try
                     {
