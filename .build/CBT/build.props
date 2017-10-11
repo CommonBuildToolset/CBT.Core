@@ -141,22 +141,22 @@
   <!-- _GenerateRestoreProjectSpec is a from the nuget.targets new to NuGet 4.x. -->
   <Target Name="GenerateModuleRestoreInfo" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(RestoreOutputAbsolutePath)' != '' And '$(MSBuildProjectFullPath)' == '$(CBTModulePackageConfigPath)' " >
     <ItemGroup>
-      <ModuleRestoreInfo Remove="@(ModuleRestoreInfo)"/>
-      <ModuleRestoreInfo Include="ProjectJsonPath">
+      <CBTModuleRestoreInfo Remove="@(CBTModuleRestoreInfo)"/>
+      <CBTModuleRestoreInfo Include="ProjectJsonPath">
         <value>$(_CurrentProjectJsonPath)</value>
-      </ModuleRestoreInfo>
-      <ModuleRestoreInfo Include="RestoreProjectStyle">
+      </CBTModuleRestoreInfo>
+      <CBTModuleRestoreInfo Include="RestoreProjectStyle">
         <value>$(RestoreProjectStyle)</value>
-      </ModuleRestoreInfo>
-      <ModuleRestoreInfo Include="RestoreOutputAbsolutePath">
+      </CBTModuleRestoreInfo>
+      <CBTModuleRestoreInfo Include="RestoreOutputAbsolutePath">
         <value>$(RestoreOutputAbsolutePath)</value>
-      </ModuleRestoreInfo>
-      <ModuleRestoreInfo Include="PackageReference">
+      </CBTModuleRestoreInfo>
+      <CBTModuleRestoreInfo Include="PackageReference">
         <id>%(PackageReference.Identity)</id>
         <version>%(PackageReference.Version)</version>
-      </ModuleRestoreInfo>
+      </CBTModuleRestoreInfo>
     </ItemGroup>
-    <WriteModuleRestoreInfo File="$(CBTModuleRestoreInfoFile)" Input="@(ModuleRestoreInfo)" />
+    <WriteModuleRestoreInfo File="$(CBTModuleRestoreInfoFile)" Input="@(CBTModuleRestoreInfo)" />
   </Target>
   <Import Project="$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)" Condition=" '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)') " />
 

@@ -234,12 +234,12 @@ namespace CBT.Core.UnitTests
             var itemEnumerator = itemGroup.Items.GetEnumerator();
             itemEnumerator.MoveNext();
             var item = itemEnumerator.Current;
-            item.ItemType.ShouldBe("ModuleRestoreInfo");
-            item.Remove.ShouldBe("@(ModuleRestoreInfo)");
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
+            item.Remove.ShouldBe("@(CBTModuleRestoreInfo)");
 
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
-            item.ItemType.ShouldBe("ModuleRestoreInfo");
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Include.ShouldBe("ProjectJsonPath");
             item.Metadata.Count.ShouldBe(1);
             item.Metadata.First().Name.ShouldBe("value");
@@ -247,7 +247,7 @@ namespace CBT.Core.UnitTests
 
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
-            item.ItemType.ShouldBe("ModuleRestoreInfo");
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Include.ShouldBe("RestoreProjectStyle");
             item.Metadata.Count.ShouldBe(1);
             item.Metadata.First().Name.ShouldBe("value");
@@ -255,7 +255,7 @@ namespace CBT.Core.UnitTests
 
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
-            item.ItemType.ShouldBe("ModuleRestoreInfo");
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Include.ShouldBe("RestoreOutputAbsolutePath");
             item.Metadata.Count.ShouldBe(1);
             item.Metadata.First().Name.ShouldBe("value");
@@ -263,7 +263,7 @@ namespace CBT.Core.UnitTests
 
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
-            item.ItemType.ShouldBe("ModuleRestoreInfo");
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Include.ShouldBe("PackageReference");
             item.Metadata.Count.ShouldBe(2);
             item.Metadata.First().Name.ShouldBe("id");
@@ -282,7 +282,7 @@ namespace CBT.Core.UnitTests
             task1.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 {"File", "$(CBTModuleRestoreInfoFile)"},
-                {"Input", "@(ModuleRestoreInfo)"},
+                {"Input", "@(CBTModuleRestoreInfo)"},
             });
 
             targetChildrenEnumerator.Dispose();
