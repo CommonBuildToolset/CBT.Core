@@ -13,6 +13,6 @@ namespace CBT.Core.Internal
         /// <param name="packagesPath">The path to the packages folder.</param>
         /// <param name="packageConfigPath">The path to the NuGet package configuration file.</param>
         /// <returns>An <see cref="IEnumerable{PackageIdentity}"/> of the packages specified in the configuration.</returns>
-        IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, PackageRestoreData packageRestoreData);
+        IEnumerable<PackageIdentityWithPath> GetPackages(string packagesPath, string packageConfigPath, ModuleRestoreInfo moduleRestoreInfo);
     }
 }

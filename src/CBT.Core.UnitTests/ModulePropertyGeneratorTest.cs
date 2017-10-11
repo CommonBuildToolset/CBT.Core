@@ -30,7 +30,7 @@ namespace CBT.Core.UnitTests
         private readonly string _projectPackageReferencePath;
         private readonly string _packagesConfigPath;
         private readonly string _packagesPath;
-        private readonly PackageRestoreData _packageRestoreData;
+        private readonly ModuleRestoreInfo _moduleRestoreInfo;
         private readonly string _v1PackagePath = @"CBT\Module";
 
         public ModulePropertyGeneratorTest()
@@ -47,7 +47,7 @@ namespace CBT.Core.UnitTests
                 new PackageIdentity("Package3.a.b.c.d.e.f", new NuGetVersion(10, 10, 9999, 9999, "beta99", "")),
             };
 
-            _packageRestoreData = new PackageRestoreData
+            _moduleRestoreInfo = new ModuleRestoreInfo
             {
                 RestoreOutputAbsolutePath = TestDirectory,
                 PackageImportOrder = new List<RestorePackage>
@@ -87,7 +87,7 @@ namespace CBT.Core.UnitTests
 
             // Write out a project.assests.json file
             //
-            new LockFileFormat().Write(Path.Combine(_packageRestoreData.RestoreOutputAbsolutePath, "project.assets.json"), new LockFile
+            new LockFileFormat().Write(Path.Combine(_moduleRestoreInfo.RestoreOutputAbsolutePath, "project.assets.json"), new LockFile
             {
                 Version = 1,
                 Libraries = _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase))).Select(i => new LockFileLibrary
@@ -145,7 +145,7 @@ namespace CBT.Core.UnitTests
         {
             NuGetPackageReferenceProjectParser configParser = new NuGetPackageReferenceProjectParser(null);
 
-            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectPackageReferencePath, _packageRestoreData).ToList();
+            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectPackageReferencePath, _moduleRestoreInfo).ToList();
 
             IEnumerable<PackageIdentity> packagesIdentities = _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase)));
 
@@ -194,7 +194,7 @@ namespace CBT.Core.UnitTests
                 BuildEngine = new TestBuildEngine()
             });
 
-            ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(logHelper, _packagesPath, _packageRestoreData, packageConfig);
+            ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(logHelper, _packagesPath, _moduleRestoreInfo, packageConfig);
 
             string outputPath = GetFilePath("build.props");
             string extensionsPath = GetFilePath("Extensions");

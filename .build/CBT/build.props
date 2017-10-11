@@ -70,7 +70,6 @@
     <CBTModuleRestoreCommandArguments Condition=" '$(CBTModuleRestoreCommandArguments)' == '' ">restore &quot;$(CBTModulePackageConfigPath)&quot; -NonInteractive</CBTModuleRestoreCommandArguments>
     <CBTModuleRestoreCommandArguments Condition=" '$(CBTModuleRestoreCommandAdditionalArguments)' != '' ">$(CBTModuleRestoreCommandArguments) $(CBTModuleRestoreCommandAdditionalArguments)</CBTModuleRestoreCommandArguments>
 
-    <CBTModuleNuGetAssetsFlagFile Condition=" '$(CBTModuleNuGetAssetsFlagFile)' == '' ">$(CBTIntermediateOutputPath)\AssetsLockFilePath.flag</CBTModuleNuGetAssetsFlagFile>
     <!-- Do not restore CBT modules when NuGet is evaluating CBTModules.proj. -->
     <RestoreCBTModules Condition=" $(RestoreGraphProjectInput.Contains($(CBTModulePackageConfigPath))) ">false</RestoreCBTModules>
     <!--
@@ -87,7 +86,7 @@
     -->
     <CBTCoreAssemblyName Condition=" Exists('$(CBTCoreAssemblyPath)') And '$(CBTCoreAssemblyPath.GetType().Assembly.GetType(`System.AppDomain`).GetProperty(`CurrentDomain`).GetValue(null).GetData(`CBT_CORE_ASSEMBLY`))' == '' ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).SetData('CBT_CORE_ASSEMBLY', $(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).Load($(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.IO.File').GetMethod('ReadAllBytes').Invoke(null, $([System.IO.Directory]::GetFiles($([System.IO.Path]::GetDirectoryName($(CBTCoreAssemblyPath))), $([System.IO.Path]::GetFileName($(CBTCoreAssemblyPath)))))))))))</CBTCoreAssemblyName> 
     <CBTCoreAssemblyName>$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY'))</CBTCoreAssemblyName> 
-    <CBTModulesRestored Condition=" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTPackagesFallbackPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath), $(CBTModuleNuGetAssetsFlagFile)))</CBTModulesRestored>
+    <CBTModulesRestored Condition=" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTPackagesFallbackPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath)))</CBTModulesRestored>
 
   </PropertyGroup>
 
@@ -106,7 +105,7 @@
   <Import Project="$(CBTModulePropertiesFile)" Condition=" ('$(CBTModulesRestored)' == 'true' Or '$(BuildingInsideVisualStudio)' == 'true') And Exists('$(CBTModulePropertiesFile)') "/>
 
   <UsingTask TaskName="RestoreModules" AssemblyFile="$(CBTCoreAssemblyPath)" />
-  <UsingTask TaskName="WriteAssetsFlagJsonFile" AssemblyFile="$(CBTCoreAssemblyPath)" />
+  <UsingTask TaskName="WriteModuleRestoreInfo" AssemblyFile="$(CBTCoreAssemblyPath)" />
 
   <Target Name="ShowCBTParseErrors" Condition=" '@(CBTParseError)' != '' ">
     <Error Text="%(CBTParseError.Identity)" Code="%(CBTParseError.Code)" />
@@ -131,7 +130,6 @@
       ProjectFullPath="$(MSBuildProjectFullPath)"
       RestoreCommand="$(CBTModuleRestoreCommand)"
       RestoreCommandArguments="$(CBTModuleRestoreCommandArguments)"
-      AssetsFlag="$(CBTModuleNuGetAssetsFlagFile)"
     />
 
     <PropertyGroup>
@@ -140,25 +138,25 @@
 
   </Target>
 
-  <!-- _GenerateRestoreProjectSpec is a from the nuget.targets new to nuget 4.x. -->
-  <Target Name="GenerateModuleAssetFlagFile" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(RestoreOutputAbsolutePath)' != '' And '$(MSBuildProjectFullPath)' == '$(CBTModulePackageConfigPath)' " >
+  <!-- _GenerateRestoreProjectSpec is a from the nuget.targets new to NuGet 4.x. -->
+  <Target Name="GenerateModuleRestoreInfo" AfterTargets="_GenerateRestoreProjectSpec" Condition=" '$(RestoreOutputAbsolutePath)' != '' And '$(MSBuildProjectFullPath)' == '$(CBTModulePackageConfigPath)' " >
     <ItemGroup>
-      <RestoreAssetsFlagData Remove="@(RestoreAssetsFlagData)"/>
-      <RestoreAssetsFlagData Include="ProjectJsonPath">
+      <CBTModuleRestoreInfo Remove="@(CBTModuleRestoreInfo)"/>
+      <CBTModuleRestoreInfo Include="ProjectJsonPath">
         <value>$(_CurrentProjectJsonPath)</value>
-      </RestoreAssetsFlagData>
-      <RestoreAssetsFlagData Include="RestoreProjectStyle">
+      </CBTModuleRestoreInfo>
+      <CBTModuleRestoreInfo Include="RestoreProjectStyle">
         <value>$(RestoreProjectStyle)</value>
-      </RestoreAssetsFlagData>
-      <RestoreAssetsFlagData Include="RestoreOutputAbsolutePath">
+      </CBTModuleRestoreInfo>
+      <CBTModuleRestoreInfo Include="RestoreOutputAbsolutePath">
         <value>$(RestoreOutputAbsolutePath)</value>
-      </RestoreAssetsFlagData>
-      <RestoreAssetsFlagData Include="PackageReference">
+      </CBTModuleRestoreInfo>
+      <CBTModuleRestoreInfo Include="PackageReference">
         <id>%(PackageReference.Identity)</id>
         <version>%(PackageReference.Version)</version>
-      </RestoreAssetsFlagData>
+      </CBTModuleRestoreInfo>
     </ItemGroup>
-    <WriteAssetsFlagJsonFile File="$(CBTModuleNuGetAssetsFlagFile)" Input="@(RestoreAssetsFlagData)" />
+    <WriteModuleRestoreInfo File="$(CBTModuleRestoreInfoFile)" Input="@(CBTModuleRestoreInfo)" />
   </Target>
   <Import Project="$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)" Condition=" '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)') " />
 

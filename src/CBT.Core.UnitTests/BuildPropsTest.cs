@@ -59,11 +59,10 @@ namespace CBT.Core.UnitTests
                 new Property("CBTModuleRestoreCommand", @"$(CBTNuGetBinDir)\NuGet.exe", defaultCondition),
                 new Property("CBTModuleRestoreCommandArguments", @"restore ""$(CBTModulePackageConfigPath)"" -NonInteractive", defaultCondition),
                 new Property("CBTModuleRestoreCommandArguments", @"$(CBTModuleRestoreCommandArguments) $(CBTModuleRestoreCommandAdditionalArguments)", @" '$(CBTModuleRestoreCommandAdditionalArguments)' != '' "),
-                new Property("CBTModuleNuGetAssetsFlagFile", @"$(CBTIntermediateOutputPath)\AssetsLockFilePath.flag", defaultCondition),
                 new Property("RestoreCBTModules", @"false", @" $(RestoreGraphProjectInput.Contains($(CBTModulePackageConfigPath))) "),
                 new Property("CBTCoreAssemblyName", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).SetData('CBT_CORE_ASSEMBLY', $(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).Load($(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.IO.File').GetMethod('ReadAllBytes').Invoke(null, $([System.IO.Directory]::GetFiles($([System.IO.Path]::GetDirectoryName($(CBTCoreAssemblyPath))), $([System.IO.Path]::GetFileName($(CBTCoreAssemblyPath)))))))))))", @" Exists('$(CBTCoreAssemblyPath)') And '$(CBTCoreAssemblyPath.GetType().Assembly.GetType(`System.AppDomain`).GetProperty(`CurrentDomain`).GetValue(null).GetData(`CBT_CORE_ASSEMBLY`))' == '' "),
                 new Property("CBTCoreAssemblyName", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY'))", string.Empty),
-                new Property("CBTModulesRestored", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTPackagesFallbackPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath), $(CBTModuleNuGetAssetsFlagFile)))", @" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ")
+                new Property("CBTModulesRestored", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTPackagesFallbackPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath)))", @" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ")
             };
             var propertiesToScan = _project.Properties.Where(p => p.Parent.Parent is ProjectRootElement);
             var propertiesEnumerator = propertiesToScan.GetEnumerator();
@@ -184,7 +183,6 @@ namespace CBT.Core.UnitTests
                 {"ProjectFullPath","$(MSBuildProjectFullPath)"},
                 {"RestoreCommand", "$(CBTModuleRestoreCommand)"},
                 {"RestoreCommandArguments", "$(CBTModuleRestoreCommandArguments)"},
-                {"AssetsFlag", "$(CBTModuleNuGetAssetsFlagFile)"}
             });
 
             var propertyGroup = target.PropertyGroups.LastOrDefault();
@@ -210,10 +208,9 @@ namespace CBT.Core.UnitTests
 
         [Fact]
         [Description("Verifies that the GenerateAssetFlagFile target is properly defined.")]
-        public void GenerateModuleAssetFlagFileTargetTest()
+        public void GenerateModuleRestoreInfoTargetTest()
         {
-
-            ProjectTargetElement target = _project.Targets.FirstOrDefault(i => i.Name.Equals("GenerateModuleAssetFlagFile", StringComparison.OrdinalIgnoreCase));
+            ProjectTargetElement target = _project.Targets.FirstOrDefault(i => i.Name.Equals("GenerateModuleRestoreInfo", StringComparison.OrdinalIgnoreCase));
 
             target.ShouldNotBeNull();
 
@@ -237,12 +234,12 @@ namespace CBT.Core.UnitTests
             var itemEnumerator = itemGroup.Items.GetEnumerator();
             itemEnumerator.MoveNext();
             var item = itemEnumerator.Current;
-            item.ItemType.ShouldBe("RestoreAssetsFlagData");
-            item.Remove.ShouldBe("@(RestoreAssetsFlagData)");
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
+            item.Remove.ShouldBe("@(CBTModuleRestoreInfo)");
 
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
-            item.ItemType.ShouldBe("RestoreAssetsFlagData");
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Include.ShouldBe("ProjectJsonPath");
             item.Metadata.Count.ShouldBe(1);
             item.Metadata.First().Name.ShouldBe("value");
@@ -250,7 +247,7 @@ namespace CBT.Core.UnitTests
 
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
-            item.ItemType.ShouldBe("RestoreAssetsFlagData");
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Include.ShouldBe("RestoreProjectStyle");
             item.Metadata.Count.ShouldBe(1);
             item.Metadata.First().Name.ShouldBe("value");
@@ -258,7 +255,7 @@ namespace CBT.Core.UnitTests
 
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
-            item.ItemType.ShouldBe("RestoreAssetsFlagData");
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Include.ShouldBe("RestoreOutputAbsolutePath");
             item.Metadata.Count.ShouldBe(1);
             item.Metadata.First().Name.ShouldBe("value");
@@ -266,7 +263,7 @@ namespace CBT.Core.UnitTests
 
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
-            item.ItemType.ShouldBe("RestoreAssetsFlagData");
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Include.ShouldBe("PackageReference");
             item.Metadata.Count.ShouldBe(2);
             item.Metadata.First().Name.ShouldBe("id");
@@ -279,13 +276,13 @@ namespace CBT.Core.UnitTests
 
             var task1 = targetChildrenEnumerator.Current as ProjectTaskElement;
             task1.ShouldNotBe(null);
-            task1.Name.ShouldBe("WriteAssetsFlagJsonFile");
+            task1.Name.ShouldBe("WriteModuleRestoreInfo");
             task1.Condition.ShouldBe(string.Empty);
             task1.Parameters.Count.ShouldBe(2);
             task1.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                {"File", "$(CBTModuleNuGetAssetsFlagFile)"},
-                {"Input", "@(RestoreAssetsFlagData)"},
+                {"File", "$(CBTModuleRestoreInfoFile)"},
+                {"Input", "@(CBTModuleRestoreInfo)"},
             });
 
             targetChildrenEnumerator.Dispose();
