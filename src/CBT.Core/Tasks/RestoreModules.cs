@@ -1,5 +1,6 @@
 ﻿using CBT.Core.Internal;
 using Microsoft.Build.Framework;
+using Newtonsoft.Json;
 using NuGet.Configuration;
 using System;
 using System.Diagnostics;
@@ -8,7 +9,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace CBT.Core.Tasks
 {
@@ -68,10 +68,6 @@ namespace CBT.Core.Tasks
         [Required]
         public string PackageConfig { get; set; }
 
-        public string PackagesFallbackPath { get; set; }
-
-        public string PackagesPath { get; set; }
-
         [Required]
         public string ProjectFullPath { get; set; }
 
@@ -96,9 +92,7 @@ namespace CBT.Core.Tasks
             //
             string semaphoreName = ImportsFile.ToUpper().GetHashCode().ToString("X");
 
-            bool releaseSemaphore;
-
-            using (Semaphore semaphore = new Semaphore(0, 1, semaphoreName, out releaseSemaphore))
+            using (Semaphore semaphore = new Semaphore(0, 1, semaphoreName, out bool releaseSemaphore))
             {
                 try
                 {
@@ -131,8 +125,9 @@ namespace CBT.Core.Tasks
 
                     _log.LogMessage(MessageImportance.Low, "Create CBT module imports");
 
+                    ISettings settings = Settings.LoadDefaultSettings(Path.GetDirectoryName(PackageConfig), configFileName: null, machineWideSettings: new XPlatMachineWideSetting());
 
-                    ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(_log, PackagesPath, packageRestoreData, PackageConfig);
+                    ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(settings, _log, packageRestoreData, PackageConfig);
 
                     if (!modulePropertyGenerator.Generate(ImportsFile, ExtensionsPath, BeforeImports, AfterImports))
                     {
@@ -158,7 +153,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string packagesPath, string packagesFallbackPath, string restoreCommand, string restoreCommandArguments, string projectFullPath)
+        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string restoreCommand, string restoreCommandArguments, string projectFullPath)
         {
             BuildEngine = new CBTBuildEngine();
 
@@ -172,19 +167,13 @@ namespace CBT.Core.Tasks
             _log.LogMessage(MessageImportance.Low, $"  NuGetDownloaderAssemblyPath = {nuGetDownloaderAssemblyPath}");
             _log.LogMessage(MessageImportance.Low, $"  NuGetDownloaderClassName = {nuGetDownloaderClassName}");
             _log.LogMessage(MessageImportance.Low, $"  PackageConfig = {packageConfig}");
-            _log.LogMessage(MessageImportance.Low, $"  PackagesFallbackPath = {packagesFallbackPath}");
-            _log.LogMessage(MessageImportance.Low, $"  PackagesPath = {packagesPath}");
             _log.LogMessage(MessageImportance.Low, $"  ProjectFullPath = {projectFullPath}");
             _log.LogMessage(MessageImportance.Low, $"  RestoreCommand = {restoreCommand}");
             _log.LogMessage(MessageImportance.Low, $"  RestoreCommandArguments = {restoreCommandArguments}");
 
-            if (!String.IsNullOrWhiteSpace(packagesPath) && !Directory.Exists(packagesPath))
+            if (IsFileUpToDate(importsFile, inputs))
             {
-                _log.LogMessage(MessageImportance.Low, $"The path '{packagesPath}' does not exist so modules will be restored.");
-            }
-            else if (IsFileUpToDate(importsFile, inputs))
-            {
-                _log.LogMessage(MessageImportance.Low, $"Skipping module restoration because everything is up-to-date.");
+                _log.LogMessage(MessageImportance.Low, "Skipping module restoration because everything is up-to-date.");
                 return true;
             }
 
@@ -197,8 +186,6 @@ namespace CBT.Core.Tasks
             NuGetDownloaderClassName = nuGetDownloaderClassName;
             NuGetDownloaderArguments = nuGetDownloaderArguments;
             PackageConfig = packageConfig;
-            PackagesFallbackPath = packagesFallbackPath;
-            PackagesPath = packagesPath;
             ProjectFullPath = projectFullPath;
             RestoreCommand = restoreCommand;
             RestoreCommandArguments = restoreCommandArguments;
@@ -214,52 +201,6 @@ namespace CBT.Core.Tasks
             };
 
             return Execute();
-        }
-
-        /// <summary>
-        /// Determines if a file is up-to-date in relation to the specified paths.
-        /// </summary>
-        /// <param name="input">The file to check if it is out-of-date.</param>
-        /// <param name="outputs">The list of files to check against.</param>
-        /// <returns><code>true</code> if the file does not exist or it is older than any of the other files.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="input"/> is <code>null</code>.</exception>
-        private bool IsFileUpToDate(string input, params string[] outputs)
-        {
-            if (String.IsNullOrWhiteSpace(input))
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-
-            if (!File.Exists(input))
-            {
-                _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because it does not exist.");
-                return false;
-            }
-            if (outputs == null || outputs.Length == 0)
-            {
-                _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because no outputs were specified.");
-                return false;
-            }
-
-            DateTime lastWriteTime = File.GetLastWriteTimeUtc(input);
-
-            foreach (var output in outputs)
-            {
-                if (!File.Exists(output))
-                {
-                    _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because the output file '{output}' does not exist.");
-                    return false;
-                }
-
-                var outputLastWriteTime = File.GetLastWriteTimeUtc(output);
-
-                if (outputLastWriteTime.Ticks > lastWriteTime.Ticks)
-                {
-                    _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because the output file '{output}' is newer ({lastWriteTime:O} > {outputLastWriteTime:O}).");
-                    return false;
-                }
-            }
-            return true;
         }
 
         private async Task<bool> DownloadNuGet()
@@ -363,54 +304,54 @@ namespace CBT.Core.Tasks
         }
 
         /// <summary>
-        /// Gets the effective packages path which can vary whether the path is user specified, contained in a settings file, or provided as an environment variable.
+        /// Determines if a file is up-to-date in relation to the specified paths.
         /// </summary>
-        /// <param name="settings">The <see cref="ISettings"/> to use when getting the path from a NuGet.config file.</param>
-        /// <returns>The effective package path.</returns>
-        private string GetEffectivePackagesPath(ISettings settings)
+        /// <param name="input">The file to check if it is out-of-date.</param>
+        /// <param name="outputs">The list of files to check against.</param>
+        /// <returns><code>true</code> if the file does not exist or it is older than any of the other files.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="input"/> is <code>null</code>.</exception>
+        private bool IsFileUpToDate(string input, params string[] outputs)
         {
-            string packagesPath = null;
-
-            string packageConfigFileName = Path.GetFileName(PackageConfig);
-
-            if (packageConfigFileName != null && packageConfigFileName.Equals(NuGet.ProjectManagement.Constants.PackageReferenceFile, StringComparison.OrdinalIgnoreCase))
+            if (String.IsNullOrWhiteSpace(input))
             {
-                packagesPath = !String.IsNullOrWhiteSpace(PackagesPath) ? PackagesPath
-                    : SettingsUtility.GetRepositoryPath(settings)
-                      ?? SettingsUtility.GetGlobalPackagesFolder(settings) // This shouldn't technically count but it makes sense to obey the new locations for the older style
-                      ?? PackagesFallbackPath;
-            }
-            // The case for project.json as well as PackageReference scenario.
-            else if (!String.IsNullOrWhiteSpace(packageConfigFileName) && String.IsNullOrWhiteSpace(packagesPath))
-            {
-                packagesPath = !String.IsNullOrWhiteSpace(PackagesPath) ? PackagesPath
-                    : SettingsUtility.GetGlobalPackagesFolder(settings)
-                      ?? PackagesFallbackPath;
+                throw new ArgumentNullException(nameof(input));
             }
 
-            return String.IsNullOrWhiteSpace(packagesPath) ? null : Path.GetFullPath(packagesPath).TrimEnd(Path.DirectorySeparatorChar);
+            if (!File.Exists(input))
+            {
+                _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because it does not exist.");
+                return false;
+            }
+            if (outputs == null || outputs.Length == 0)
+            {
+                _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because no outputs were specified.");
+                return false;
+            }
+
+            DateTime lastWriteTime = File.GetLastWriteTimeUtc(input);
+
+            foreach (var output in outputs)
+            {
+                if (!File.Exists(output))
+                {
+                    _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because the output file '{output}' does not exist.");
+                    return false;
+                }
+
+                var outputLastWriteTime = File.GetLastWriteTimeUtc(output);
+
+                if (outputLastWriteTime.Ticks > lastWriteTime.Ticks)
+                {
+                    _log.LogMessage(MessageImportance.Low, $"File '{input}' is not up-to-date because the output file '{output}' is newer ({lastWriteTime:O} > {outputLastWriteTime:O}).");
+                    return false;
+                }
+            }
+            return true;
         }
 
         private bool TryRestorePackages(out ModuleRestoreInfo moduleRestoreInfo)
         {
             moduleRestoreInfo = null;
-
-            NuGetSettingsHelper nuGetSettingsHelper = new NuGetSettingsHelper(Path.GetDirectoryName(PackageConfig));
-
-            PackagesPath = GetEffectivePackagesPath(nuGetSettingsHelper.Settings);
-
-            if (String.IsNullOrWhiteSpace(PackagesPath))
-            {
-                _log.LogError("Unable to determine the path to a NuGet packages folder.");
-                return false;
-            }
-
-            _log.LogMessage(MessageImportance.Low, $"Packages will be restored to '{PackagesPath}'");
-
-            if (RestoreCommandArguments.IndexOf("-o", StringComparison.OrdinalIgnoreCase) < 0 && RestoreCommandArguments.IndexOf("-PackagesDirectory", StringComparison.OrdinalIgnoreCase) < 0)
-            {
-                RestoreCommandArguments = $"{RestoreCommandArguments} -PackagesDirectory \"{PackagesPath}\"";
-            }
 
             bool isPackagesConfig = PackageConfig.EndsWith("packages.config", StringComparison.OrdinalIgnoreCase);
 
@@ -525,7 +466,7 @@ namespace CBT.Core.Tasks
                     {
                         File.Delete(moduleRestoreInfoFile);
                     }
-                    catch (Exception )
+                    catch (Exception)
                     {
                         // Ignored
                     }

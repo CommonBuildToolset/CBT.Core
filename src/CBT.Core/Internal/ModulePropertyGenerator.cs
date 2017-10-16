@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using NuGet.Configuration;
 
 namespace CBT.Core.Internal
 {
@@ -16,54 +17,40 @@ namespace CBT.Core.Internal
         internal static readonly string ModuleConfigPath = Path.Combine(ImportRelativePath, "module.config");
         internal static readonly string ModuleRelativePathV1 = Path.Combine("CBT", "Module");
         internal static readonly string PropertyNamePrefix = "CBTModule_";
-        internal static readonly string PropertyValuePrefix = $"$(NuGetPackagesPath){Path.DirectorySeparatorChar}";
         private readonly CBTTaskLogHelper _log;
-        private readonly IDictionary<string, PackageIdentityWithPath> _packages;
-        private readonly string _packagesPath;
+        private readonly Lazy<IEnumerable<PackageIdentityWithPath>> _packagesLazy;
 
-        public ModulePropertyGenerator(CBTTaskLogHelper logHelper, string packagesPath, ModuleRestoreInfo moduleRestoreInfo, params string[] packageConfigPaths)
+        public ModulePropertyGenerator(ISettings settings, CBTTaskLogHelper logHelper, ModuleRestoreInfo moduleRestoreInfo, string packageConfigPath)
             : this(new List<INuGetPackageConfigParser>
             {
-                new NuGetPackagesConfigParser(),
-                new NuGetPackageReferenceProjectParser(logHelper)
-            }, packagesPath, moduleRestoreInfo, packageConfigPaths)
+                new NuGetPackagesConfigParser(settings, logHelper),
+                new NuGetPackageReferenceProjectParser(settings, logHelper)
+            }, logHelper, moduleRestoreInfo, packageConfigPath)
         {
-            _log = logHelper;
+            
         }
 
-        public ModulePropertyGenerator(IList<INuGetPackageConfigParser> configParsers, string packagesPath, ModuleRestoreInfo moduleRestoreInfo, params string[] packageConfigPaths)
+        public ModulePropertyGenerator(IList<INuGetPackageConfigParser> configParsers, CBTTaskLogHelper logHelper, ModuleRestoreInfo moduleRestoreInfo, string packageConfigPath)
         {
             if (configParsers == null)
             {
                 throw new ArgumentNullException(nameof(configParsers));
             }
 
-            if (String.IsNullOrWhiteSpace(packagesPath))
+            if (packageConfigPath == null)
             {
-                throw new ArgumentNullException(nameof(packagesPath));
+                throw new ArgumentNullException(nameof(packageConfigPath));
             }
 
-            if (!Directory.Exists(packagesPath))
-            {
-                throw new DirectoryNotFoundException($"Could not find part of the path '{packagesPath}'");
-            }
+            _log = logHelper;
 
-            if (packageConfigPaths == null)
-            {
-                throw new ArgumentNullException(nameof(packageConfigPaths));
-            }
-
-            _packagesPath = packagesPath;
-            _packages = packageConfigPaths
-                .SelectMany(i => configParsers
-                .SelectMany(parser => parser.GetPackages(packagesPath, i, moduleRestoreInfo)))
-                .ToDictionary(i => $"{i.Id}.{i.Version}", i => i, StringComparer.OrdinalIgnoreCase);
+            _packagesLazy = new Lazy<IEnumerable<PackageIdentityWithPath>>(() => ParsePackages(configParsers, packageConfigPath, moduleRestoreInfo));
         }
 
         public bool Generate(string outputPath, string extensionsPath, string[] beforeModuleImports, string[] afterModuleImports)
         {
-            _log.LogMessage(MessageImportance.Low, $"Modules:");
-            foreach (PackageIdentityWithPath package in _packages.Values)
+            _log.LogMessage(MessageImportance.Low, "Modules:");
+            foreach (PackageIdentityWithPath package in _packagesLazy.Value)
             {
                 _log.LogMessage(MessageImportance.Low, $"  {package.Id} {package.Version}");
             }
@@ -78,7 +65,7 @@ namespace CBT.Core.Internal
                 }
             }
 
-            AddImports(project, _packages.Values);
+            AddImports(project, _packagesLazy.Value);
 
             if (afterModuleImports != null)
             {
@@ -97,7 +84,7 @@ namespace CBT.Core.Internal
             {
                 ProjectRootElement extensionProject = ProjectRootElement.Create(Path.Combine(extensionsPath, item));
 
-                AddImports(extensionProject, _packages.Values);
+                AddImports(extensionProject, _packagesLazy.Value);
 
                 _log.LogMessage(MessageImportance.Low, $"Saving import file '{extensionProject.FullPath}'.");
 
@@ -109,7 +96,7 @@ namespace CBT.Core.Internal
 
         private void AddImports(ProjectRootElement project, IEnumerable<PackageIdentityWithPath> modulePackages)
         {
-            foreach (var modulePackage in modulePackages.Where(i => !string.IsNullOrWhiteSpace(i?.Path)))
+            foreach (var modulePackage in modulePackages.Where(i => !string.IsNullOrWhiteSpace(i?.FullPath)))
             {
                 // For cbt module build packages import the packageId.Props into the build.props file.
                 // For non cbt module build packages do nothing let cbt.nuget handle them.
@@ -126,7 +113,7 @@ namespace CBT.Core.Internal
                 string importPath = v1Package ? Path.Combine(ModuleRelativePathV1, "$(MSBuildThisFile)") : Path.Combine(ImportRelativePath, importFileName);
                 if (v1Package || (File.Exists(Path.Combine(modulePackage.FullPath, importPath)) && isCbtModulePackage))
                 {
-                    ProjectImportElement importElement = project?.AddImport(Path.Combine(PropertyValuePrefix, modulePackage.Path, importPath));
+                    ProjectImportElement importElement = project?.AddImport(Path.Combine(modulePackage.FullPath, importPath));
                     if (v1Package && importElement != null)
                     {
                         importElement.Condition = $" Exists('{importElement.Project}') ";
@@ -142,18 +129,15 @@ namespace CBT.Core.Internal
             ProjectPropertyGroupElement propertyGroup = project.AddPropertyGroup();
 
             propertyGroup.SetProperty("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)");
-            ProjectPropertyElement nuGetPackagesPathProperty = propertyGroup.AddProperty("NuGetPackagesPath", _packagesPath);
 
-            nuGetPackagesPathProperty.Condition = " '$(NuGetPackagesPath)' == '' ";
+            propertyGroup.SetProperty("CBTAllModulePaths", String.Join(";", _packagesLazy.Value.Select(i => $"{i.Id}={i.FullPath}")));
 
-            propertyGroup.SetProperty("CBTAllModulePaths", String.Join(";", _packages.Values.Select(i => $"{i.Id}={PropertyValuePrefix}{i.Path}")));
-
-            foreach (PackageIdentityWithPath item in _packages.Values)
+            foreach (PackageIdentityWithPath item in _packagesLazy.Value)
             {
                 // Generate the property name and value once
                 //
                 string propertyName = $"{PropertyNamePrefix}{item.Id.Replace(".", "_")}";
-                string propertyValue = $"{PropertyValuePrefix}{item.Path}";
+                string propertyValue = item.FullPath;
 
                 propertyGroup.SetProperty(propertyName, propertyValue);
             }
@@ -165,7 +149,7 @@ namespace CBT.Core.Internal
         {
             ConcurrentDictionary<string, string> extensionImports = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            Parallel.ForEach(_packages.Values, packageInfo =>
+            Parallel.ForEach(_packagesLazy.Value, packageInfo =>
             {
                 string path = Path.Combine(packageInfo.FullPath, ModuleConfigPath);
 
@@ -190,7 +174,7 @@ namespace CBT.Core.Internal
                 }
             });
 
-            _log.LogMessage(MessageImportance.Low, $"Module extensions:");
+            _log.LogMessage(MessageImportance.Low, "Module extensions:");
 
             foreach (KeyValuePair<string, string> item in extensionImports)
             {
@@ -198,6 +182,22 @@ namespace CBT.Core.Internal
             }
 
             return extensionImports;
+        }
+
+        private List<PackageIdentityWithPath> ParsePackages(IList<INuGetPackageConfigParser> configParsers, string packageConfigPath, ModuleRestoreInfo moduleRestoreInfo)
+        {
+            _log.LogMessage(MessageImportance.Low, $"Parsing '{packageConfigPath}'");
+
+            IEnumerable<PackageIdentityWithPath> packages = null;
+
+            INuGetPackageConfigParser configParser = configParsers.FirstOrDefault(i => i.TryGetPackages(packageConfigPath, moduleRestoreInfo, out packages));
+
+            if (configParser == null)
+            {
+                throw new InvalidOperationException($"The NuGet package configuration file '{packageConfigPath}' could not be parsed.  It is not one of the supported types: PackagesConfig, ProjectJson, PackageReference.");
+            }
+
+            return packages.ToList();
         }
     }
 }
