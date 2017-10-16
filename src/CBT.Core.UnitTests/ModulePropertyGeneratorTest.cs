@@ -49,6 +49,7 @@ namespace CBT.Core.UnitTests
             _packageRestoreData = new ModuleRestoreInfo
             {
                 RestoreOutputAbsolutePath = TestDirectory,
+                RestoreProjectStyle = "PackageReference",
                 PackageImportOrder = new List<RestorePackage>
                 {
                     new RestorePackage("Package1", "1.0.0"),
