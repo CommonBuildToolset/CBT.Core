@@ -8,8 +8,8 @@
     <Reference Include="System" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
-    <PackageReference Include="NuGet.Configuration" Version="4.0.0" />
-    <PackageReference Include="NuGet.ProjectManagement" Version="4.0.0" />
+    <PackageReference Include="NuGet.Commands" Version="4.3.0" />
+    <PackageReference Include="NuGet.Protocol" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(CBTGlobalPath)\build.props">

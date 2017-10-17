@@ -31,21 +31,6 @@
     <CBTModulePackageConfigPath Condition=" '$(CBTModulePackageConfigPath)' != '' ">$([System.IO.Path]::GetFullPath($(CBTModulePackageConfigPath)))</CBTModulePackageConfigPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(CBTModulePackageConfigPath)' != '' And '$([System.IO.Path]::GetFileName($(CBTModulePackageConfigPath)))' == 'packages.config' ">
-    <!--
-      For NuGet v2 / packages.config the package path is determined in the following order:
-      - User specified path at the command-line
-      - In a NuGet.config via the repositoryPath setting
-      - $(SolutionDir)\packages if restoring a solution or a solution directory is specified at the command-line
-      - $(MSBuildProjectDirectory)\..\packages if restoring a project only
-      
-      The path is created here as a fall back so that the $(SolutionDir) and $(MSBuildProjectDirectory) don't have to be pass during module restoration.
-      If the user specifies a value for $(NuGetPackagesPath), then it will be used, then the NuGet setting, and then finally this fall back value
-    -->
-    <CBTPackagesFallbackPath Condition=" '$(CBTPackagesFallbackPath)' == '' And '$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*' And Exists('$(SolutionDir)')">$([System.IO.Path]::Combine($(SolutionDir), 'packages'))</CBTPackagesFallbackPath>
-    <CBTPackagesFallbackPath Condition=" '$(CBTPackagesFallbackPath)' == '' ">$([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($(MSBuildProjectDirectory))), 'packages'))</CBTPackagesFallbackPath>
-  </PropertyGroup>
-
   <PropertyGroup>
     <CBTCoreAssemblyPath Condition=" '$(CBTCoreAssemblyPath)' == '' ">$(MSBuildThisFileDirectory)CBT.Core.dll</CBTCoreAssemblyPath>
     <CBTModuleRestoreInputs Condition=" '$(CBTModuleRestoreInputs)' == '' ">$(MSBuildThisFileFullPath);$(CBTCoreAssemblyPath);$(CBTModulePackageConfigPath)</CBTModuleRestoreInputs>
@@ -86,7 +71,7 @@
     -->
     <CBTCoreAssemblyName Condition=" Exists('$(CBTCoreAssemblyPath)') And '$(CBTCoreAssemblyPath.GetType().Assembly.GetType(`System.AppDomain`).GetProperty(`CurrentDomain`).GetValue(null).GetData(`CBT_CORE_ASSEMBLY`))' == '' ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).SetData('CBT_CORE_ASSEMBLY', $(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).Load($(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.IO.File').GetMethod('ReadAllBytes').Invoke(null, $([System.IO.Directory]::GetFiles($([System.IO.Path]::GetDirectoryName($(CBTCoreAssemblyPath))), $([System.IO.Path]::GetFileName($(CBTCoreAssemblyPath)))))))))))</CBTCoreAssemblyName> 
     <CBTCoreAssemblyName>$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY'))</CBTCoreAssemblyName> 
-    <CBTModulesRestored Condition=" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTPackagesFallbackPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath)))</CBTModulesRestored>
+    <CBTModulesRestored Condition=" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath)))</CBTModulesRestored>
 
   </PropertyGroup>
 
@@ -125,8 +110,6 @@
       NuGetDownloaderClassName="$(CBTNuGetDownloaderClassName)"
       NuGetDownloaderArguments="$(CBTNuGetDownloaderArguments)"
       PackageConfig="$(CBTModulePackageConfigPath)"
-      PackagesFallbackPath="$(CBTPackagesFallbackPath)"
-      PackagesPath="$(NuGetPackagesPath)"
       ProjectFullPath="$(MSBuildProjectFullPath)"
       RestoreCommand="$(CBTModuleRestoreCommand)"
       RestoreCommandArguments="$(CBTModuleRestoreCommandArguments)"

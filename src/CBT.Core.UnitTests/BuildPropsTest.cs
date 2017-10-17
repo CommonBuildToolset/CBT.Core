@@ -42,8 +42,6 @@ namespace CBT.Core.UnitTests
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'CBTModules', 'packages.config'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\CBTModules\packages.config') "),
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::Combine($(CBTLocalPath), 'packages.config'))", @" '$({0})' == '' And '$(CBTLocalPath)' != '' And Exists('$(CBTLocalPath)\packages.config') "),
                 new Property("CBTModulePackageConfigPath", @"$([System.IO.Path]::GetFullPath($({0})))", @" '$({0})' != '' "),
-                new Property("CBTPackagesFallbackPath", @"$([System.IO.Path]::Combine($(SolutionDir), 'packages'))", @" '$({0})' == '' And '$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*' And Exists('$(SolutionDir)')"),
-                new Property("CBTPackagesFallbackPath", @"$([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($(MSBuildProjectDirectory))), 'packages'))", defaultCondition),
                 new Property("CBTCoreAssemblyPath", @"$(MSBuildThisFileDirectory)CBT.Core.dll", defaultCondition),
                 new Property("CBTModuleRestoreInputs", @"$(MSBuildThisFileFullPath);$(CBTCoreAssemblyPath);$(CBTModulePackageConfigPath)", defaultCondition),
                 new Property("CBTIntermediateOutputPath", @"$(MSBuildThisFileDirectory)obj", defaultCondition),
@@ -62,7 +60,7 @@ namespace CBT.Core.UnitTests
                 new Property("RestoreCBTModules", @"false", @" $(RestoreGraphProjectInput.Contains($(CBTModulePackageConfigPath))) "),
                 new Property("CBTCoreAssemblyName", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).SetData('CBT_CORE_ASSEMBLY', $(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).Load($(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.IO.File').GetMethod('ReadAllBytes').Invoke(null, $([System.IO.Directory]::GetFiles($([System.IO.Path]::GetDirectoryName($(CBTCoreAssemblyPath))), $([System.IO.Path]::GetFileName($(CBTCoreAssemblyPath)))))))))))", @" Exists('$(CBTCoreAssemblyPath)') And '$(CBTCoreAssemblyPath.GetType().Assembly.GetType(`System.AppDomain`).GetProperty(`CurrentDomain`).GetValue(null).GetData(`CBT_CORE_ASSEMBLY`))' == '' "),
                 new Property("CBTCoreAssemblyName", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY'))", string.Empty),
-                new Property("CBTModulesRestored", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(NuGetPackagesPath), $(CBTPackagesFallbackPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath)))", @" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ")
+                new Property("CBTModulesRestored", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath)))", @" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ")
             };
             var propertiesToScan = _project.Properties.Where(p => p.Parent.Parent is ProjectRootElement);
             var propertiesEnumerator = propertiesToScan.GetEnumerator();
@@ -178,8 +176,6 @@ namespace CBT.Core.UnitTests
                 {"NuGetDownloaderClassName", "$(CBTNuGetDownloaderClassName)"},
                 {"NuGetDownloaderArguments", "$(CBTNuGetDownloaderArguments)"},
                 {"PackageConfig", "$(CBTModulePackageConfigPath)"},
-                {"PackagesFallbackPath", "$(CBTPackagesFallbackPath)"},
-                {"PackagesPath", "$(NuGetPackagesPath)"},
                 {"ProjectFullPath","$(MSBuildProjectFullPath)"},
                 {"RestoreCommand", "$(CBTModuleRestoreCommand)"},
                 {"RestoreCommandArguments", "$(CBTModuleRestoreCommandArguments)"},

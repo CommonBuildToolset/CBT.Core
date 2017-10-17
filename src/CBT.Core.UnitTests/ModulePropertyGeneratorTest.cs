@@ -1,17 +1,16 @@
-﻿using CBT.Core.Internal;
-using Microsoft.Build.Construction;
-using Microsoft.Build.Framework;
-using NuGet.Packaging.Core;
-using NuGet.ProjectModel;
-using NuGet.Versioning;
-using Shouldly;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using CBT.Core.Internal;
+using Microsoft.Build.Construction;
+using NuGet.Configuration;
 using NuGet.Frameworks;
+using NuGet.Packaging.Core;
+using NuGet.ProjectModel;
+using NuGet.Versioning;
+using Shouldly;
 using Xunit;
 
 // ReSharper disable PossibleNullReferenceException
@@ -23,39 +22,40 @@ namespace CBT.Core.UnitTests
         private readonly IList<Tuple<string, string, string[]>> _moduleExtensions = new List<Tuple<string, string, string[]>>
         {
             new Tuple<string, string, string[]>("Package2.Thing", new NuGetVersion("2.5.1").ToString(), new[] {"before.package2.targets"}),
-            new Tuple<string, string, string[]>("Package3.a.b.c.d.e.f", new NuGetVersion(10, 10, 9999, 9999, "beta99", "").ToString(), new[] {"before.somethingelse.targets"}),
+            new Tuple<string, string, string[]>("Package3.a.b.c.d.e.f", new NuGetVersion(10, 10, 9999, 9999, "beta99", "").ToString(), new[] {"before.somethingelse.targets"})
         };
 
+        private readonly ModuleRestoreInfo _packageRestoreData;
+        private readonly string _packageRoot;
         private readonly IList<PackageIdentity> _packages;
-        private readonly string _projectPackageReferencePath;
         private readonly string _packagesConfigPath;
-        private readonly string _packagesPath;
-        private readonly ModuleRestoreInfo _moduleRestoreInfo;
+        private readonly string _projectPackageReferencePath;
         private readonly string _v1PackagePath = @"CBT\Module";
 
         public ModulePropertyGeneratorTest()
         {
             _projectPackageReferencePath = GetFilePath("PackageReference.csproj");
             _packagesConfigPath = GetFilePath("packages.config");
-            _packagesPath = GetFilePath("packages");
+            _packageRoot = GetFilePath("packages");
 
             _packages = new List<PackageIdentity>
             {
                 new PackageIdentity("Package1", new NuGetVersion("1.0.0")),
                 new PackageIdentity("Package1", new NuGetVersion("2.0.0")),
                 new PackageIdentity("Package2.Thing", new NuGetVersion("2.5.1")),
-                new PackageIdentity("Package3.a.b.c.d.e.f", new NuGetVersion(10, 10, 9999, 9999, "beta99", "")),
+                new PackageIdentity("Package3.a.b.c.d.e.f", new NuGetVersion(10, 10, 9999, 9999, "beta99", ""))
             };
 
-            _moduleRestoreInfo = new ModuleRestoreInfo
+            _packageRestoreData = new ModuleRestoreInfo
             {
                 RestoreOutputAbsolutePath = TestDirectory,
+                RestoreProjectStyle = "PackageReference",
                 PackageImportOrder = new List<RestorePackage>
                 {
-                new RestorePackage("Package1", "1.0.0"),
-                new RestorePackage("Package1", "2.0.0"),
-                new RestorePackage("Package2.Thing", "2.5.1"),
-                new RestorePackage("Package3.a.b.c.d.e.f", "10.10.9999.9999-beta99"),
+                    new RestorePackage("Package1", "1.0.0"),
+                    new RestorePackage("Package1", "2.0.0"),
+                    new RestorePackage("Package2.Thing", "2.5.1"),
+                    new RestorePackage("Package3.a.b.c.d.e.f", "10.10.9999.9999-beta99")
                 }
             };
 
@@ -71,7 +71,7 @@ namespace CBT.Core.UnitTests
             _moduleExtensions.Add(new Tuple<string, string, string[]>("Package1", new NuGetVersion("1.0.0").ToString(), moduleExtensions.ToArray()));
             _moduleExtensions.Add(new Tuple<string, string, string[]>("Package1", new NuGetVersion("2.0.0").ToString(), moduleExtensions.ToArray()));
 
-            Directory.CreateDirectory(_packagesPath);
+            Directory.CreateDirectory(_packageRoot);
 
             // Write out a packages.config
             //
@@ -87,29 +87,87 @@ namespace CBT.Core.UnitTests
 
             // Write out a project.assests.json file
             //
-            new LockFileFormat().Write(Path.Combine(_moduleRestoreInfo.RestoreOutputAbsolutePath, "project.assets.json"), new LockFile
+            new LockFileFormat().Write(Path.Combine(_packageRestoreData.RestoreOutputAbsolutePath, "project.assets.json"), new LockFile
             {
                 Version = 1,
                 Libraries = _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase))).Select(i => new LockFileLibrary
                 {
                     Name = i.Id,
-                    Version = i.Version,
+                    Version = i.Version
                 }).ToList(),
-                Targets = new List<LockFileTarget>()
+                Targets = new List<LockFileTarget>
                 {
-                    new LockFileTarget()
+                    new LockFileTarget
                     {
                         TargetFramework = new NuGetFramework(".NETFramework,Version=v4.5"),
-                        Libraries = _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase))).Select(i => new LockFileTargetLibrary(){Name = i.Id, Version = i.Version, Type = "package"}).ToList(),
+                        Libraries = _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase))).Select(i => new LockFileTargetLibrary {Name = i.Id, Version = i.Version, Type = "package"}).ToList()
                     }
                 }
             });
         }
 
         [Fact]
-        public void V1ModulePropertiesAreCreatedPackagesConfig()
+        public void ModulePropertiesAreCreatedPackageReference()
         {
-            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
+            VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath, false);
+        }
+
+        [Fact]
+        public void ModulePropertiesAreCreatedPackagesConfig()
+        {
+            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
+        }
+
+        [Fact]
+        public void NuGetPackageReferenceProjectParserTest()
+        {
+            CBTTaskLogHelper log = new CBTTaskLogHelper(new MockTask
+            {
+                BuildEngine = new MockBuildEngine()
+            });
+
+            MockSettings settings = new MockSettings
+            {
+                {
+                    "config", new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        {"globalPackagesFolder", _packageRoot}
+                    }
+                }
+            };
+
+            NuGetPackageReferenceProjectParser configParser = new NuGetPackageReferenceProjectParser(settings, log);
+
+            configParser.TryGetPackages(_projectPackageReferencePath, _packageRestoreData, out IEnumerable<PackageIdentityWithPath> actualPackages).ShouldBeTrue();
+
+            IEnumerable<PackageIdentity> packagesIdentities = _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase)));
+
+            actualPackages.ShouldBe(packagesIdentities);
+        }
+
+        [Fact]
+        public void NuGetPackagesConfigParserTest()
+        {
+            CBTTaskLogHelper log = new CBTTaskLogHelper(new MockTask
+            {
+                BuildEngine = new MockBuildEngine()
+            });
+
+            MockSettings settings = new MockSettings
+            {
+                {
+                    "config", new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        {"repositoryPath", _packageRoot}
+                    }
+                }
+            };
+
+            NuGetPackagesConfigParser configParser = new NuGetPackagesConfigParser(settings, log);
+
+            configParser.TryGetPackages(_packagesConfigPath, null, out IEnumerable<PackageIdentityWithPath> actualPackages).ShouldBeTrue();
+
+            actualPackages.ShouldBe(_packages);
         }
 
         [Fact]
@@ -119,40 +177,21 @@ namespace CBT.Core.UnitTests
         }
 
         [Fact]
-        public void ModulePropertiesAreCreatedPackagesConfig()
+        public void V1ModulePropertiesAreCreatedPackagesConfig()
         {
-            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath);
-        }
-        
-        [Fact]
-        public void ModulePropertiesAreCreatedPackageReference()
-        {
-            VerifyModulePropertiesAreCreated(_projectPackageReferencePath, package => $"{package.Id}{Path.DirectorySeparatorChar}{package.Version}", ModulePropertyGenerator.ModuleConfigPath, ModulePropertyGenerator.ImportRelativePath, false);
+            VerifyModulePropertiesAreCreated(_packagesConfigPath, package => $"{package.Id}.{package.Version}", $@"{_v1PackagePath}\module.config", _v1PackagePath);
         }
 
-        [Fact]
-        public void NuGetPackagesConfigParserTest()
+        private string GetExpectedImports(Func<PackageIdentity, string> packageFolderFunc, string importRelativePath, PackageIdentity i, bool v1Package)
         {
-            NuGetPackagesConfigParser configParser = new NuGetPackagesConfigParser();
-
-            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _packagesConfigPath, null).ToList();
-
-            actualPackages.ShouldBe(_packages);
+            if (v1Package)
+            {
+                return Path.Combine(_packageRoot, packageFolderFunc(i), importRelativePath, "$(MSBuildThisFile)");
+            }
+            return File.Exists(Path.Combine(_packageRoot, packageFolderFunc(i), ModulePropertyGenerator.ModuleConfigPath)) && File.Exists(Path.Combine(_packageRoot, packageFolderFunc(i), importRelativePath, $"{i.Id}.props")) ? Path.Combine(_packageRoot, packageFolderFunc(i), importRelativePath, $"{i.Id}.props") : String.Empty;
         }
 
-        [Fact]
-        public void NuGetPackageReferenceProjectParserTest()
-        {
-            NuGetPackageReferenceProjectParser configParser = new NuGetPackageReferenceProjectParser(null);
-
-            List<PackageIdentityWithPath> actualPackages = configParser.GetPackages(_packagesPath, _projectPackageReferencePath, _moduleRestoreInfo).ToList();
-
-            IEnumerable<PackageIdentity> packagesIdentities = _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase)));
-
-            actualPackages.ShouldBe(packagesIdentities);
-        }
-
-        private void VerifyModulePropertiesAreCreated(string packageConfig, Func<PackageIdentity, string> packageFolderFunc, string moduleConfigPath, string importRelativePath, bool lastDefinedPackageWins=true)
+        private void VerifyModulePropertiesAreCreated(string packageConfig, Func<PackageIdentity, string> packageFolderFunc, string moduleConfigPath, string importRelativePath, bool lastDefinedPackageWins = true)
         {
             bool v1Package = importRelativePath.Equals(_v1PackagePath, StringComparison.OrdinalIgnoreCase);
             // Write out a module.config for each module that has one
@@ -161,7 +200,7 @@ namespace CBT.Core.UnitTests
             {
                 PackageIdentity package = _packages.First(i => i.Id.Equals(moduleExtension.Item1));
 
-                string moduleConfigFilePath = Path.Combine(_packagesPath, packageFolderFunc(package), moduleConfigPath);
+                string moduleConfigFilePath = Path.Combine(_packageRoot, packageFolderFunc(package), moduleConfigPath);
 
                 // ReSharper disable once AssignNullToNotNullAttribute
                 Directory.CreateDirectory(Path.GetDirectoryName(moduleConfigFilePath));
@@ -177,10 +216,10 @@ namespace CBT.Core.UnitTests
 
             // Write out all extension point files
             //
-            foreach (var pkg in _packages)
+            foreach (PackageIdentity pkg in _packages)
             {
                 PackageIdentity package = _packages.First(i => i.Id.Equals(pkg.Id) && i.Version.Equals(pkg.Version));
-                var extensionFolder = Path.Combine(_packagesPath, packageFolderFunc(package), importRelativePath);
+                string extensionFolder = Path.Combine(_packageRoot, packageFolderFunc(package), importRelativePath);
                 if (!Directory.Exists(extensionFolder))
                 {
                     Directory.CreateDirectory(extensionFolder);
@@ -189,18 +228,29 @@ namespace CBT.Core.UnitTests
                 File.WriteAllText(Path.Combine(extensionFolder, $"{pkg.Id}.props"), string.Empty);
             }
 
-            var logHelper = new CBTTaskLogHelper(new TestTask()
+            CBTTaskLogHelper logHelper = new CBTTaskLogHelper(new MockTask
             {
-                BuildEngine = new TestBuildEngine()
+                BuildEngine = new MockBuildEngine()
             });
 
-            ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(logHelper, _packagesPath, _moduleRestoreInfo, packageConfig);
+            ISettings settings = new MockSettings
+            {
+                {
+                    "config", new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        {"repositoryPath", _packageRoot},
+                        {"globalPackagesFolder", _packageRoot}
+                    }
+                }
+            };
+
+            ModulePropertyGenerator modulePropertyGenerator = new ModulePropertyGenerator(settings, logHelper, _packageRestoreData, packageConfig);
 
             string outputPath = GetFilePath("build.props");
             string extensionsPath = GetFilePath("Extensions");
 
-            string[] importsBefore = { "before.props", "before2.props" };
-            string[] importsAfter = { "after.props", "after2.props" };
+            string[] importsBefore = {"before.props", "before2.props"};
+            string[] importsAfter = {"after.props", "after2.props"};
 
             bool success = modulePropertyGenerator.Generate(outputPath, extensionsPath, importsBefore, importsAfter);
 
@@ -212,25 +262,17 @@ namespace CBT.Core.UnitTests
 
             project.ShouldNotBeNull();
 
-            IEnumerable<PackageIdentity> packagesIdentities;
-            if (lastDefinedPackageWins)
-            {
-                packagesIdentities = _packages.Reverse();
-            }
-            else
-            {
-                packagesIdentities = _packages;
-            }
+            IEnumerable<PackageIdentity> packagesIdentities = lastDefinedPackageWins ? _packages.Reverse() : _packages;
 
             // Verify all properties
             //
             foreach (Tuple<string, string> item in new[]
-                        {
-                             new Tuple<string, string>("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)"),
-                        }.Concat(packagesIdentities.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase))).Select(i =>
-                                new Tuple<string, string>(
-                                $"{ModulePropertyGenerator.PropertyNamePrefix}{i.Id.Replace(".", "_")}",
-                                $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}"))))
+            {
+                new Tuple<string, string>("MSBuildAllProjects", "$(MSBuildAllProjects);$(MSBuildThisFileFullPath)")
+            }.Concat(packagesIdentities.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase))).Select(i =>
+                new Tuple<string, string>(
+                    $"{ModulePropertyGenerator.PropertyNamePrefix}{i.Id.Replace(".", "_")}",
+                    $"{Path.Combine(_packageRoot, packageFolderFunc(i))}"))))
             {
                 ProjectPropertyElement propertyElement = project.Properties.FirstOrDefault(i => i.Name.Equals(item.Item1));
 
@@ -239,20 +281,12 @@ namespace CBT.Core.UnitTests
                 propertyElement.Value.ShouldBe(item.Item2, StringCompareShould.IgnoreCase);
             }
 
-            IEnumerable<PackageIdentity> pkgIdentities;
-            if (lastDefinedPackageWins)
-            {
-                pkgIdentities = _packages;
-            }
-            else
-            {
-                pkgIdentities = _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase)));
-            }
+            IEnumerable<PackageIdentity> pkgIdentities = lastDefinedPackageWins ? _packages : _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase)));
 
             List<string> expectedImports = importsBefore
-                                                  .Concat(pkgIdentities.Select(i => ExpectedImports(packageFolderFunc, importRelativePath, i, v1Package))
-                                                                   .Where(imp => !string.IsNullOrWhiteSpace(imp)))
-                                                  .Concat(importsAfter).ToList();
+                .Concat(pkgIdentities.Select(i => GetExpectedImports(packageFolderFunc, importRelativePath, i, v1Package))
+                    .Where(imp => !string.IsNullOrWhiteSpace(imp)))
+                .Concat(importsAfter).ToList();
 
             List<ProjectImportElement> actualImports = project.Imports.ToList();
 
@@ -273,96 +307,32 @@ namespace CBT.Core.UnitTests
 
                 ProjectRootElement extensionProject = ProjectRootElement.Open(extensionPath);
 
-                IEnumerable<PackageIdentity> extensionPkgIdentities;
-                if (lastDefinedPackageWins)
-                {
-                    extensionPkgIdentities = _packages;
-                }
-                else
-                {
-                    extensionPkgIdentities = _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase)));
-                }
+                IEnumerable<PackageIdentity> extensionPkgIdentities = lastDefinedPackageWins ? _packages : _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase)));
 
                 extensionProject.ShouldNotBeNull();
-                var expectedImportsV2 = _moduleExtensions.Where(me => me.Item3.Contains(item) && File.Exists(Path.Combine(_packagesPath,
-                            packageFolderFunc(_packages.Single(
-                                pkg => pkg.Id.Equals(me.Item1) && pkg.Version.ToString().Equals(me.Item2))),
-                            ModulePropertyGenerator.ModuleConfigPath))).ToList();
 
-                int expectedProjectImportsCount = v1Package
-                    ? extensionPkgIdentities.Count()
-                    : expectedImportsV2.Count();
+                List<Tuple<string, string, string[]>> expectedImportsV2 = _moduleExtensions.Where(me => me.Item3.Contains(item) && File.Exists(Path.Combine(_packageRoot, packageFolderFunc(_packages.Single(pkg => pkg.Id.Equals(me.Item1) && pkg.Version.ToString().Equals(me.Item2))), ModulePropertyGenerator.ModuleConfigPath))).ToList();
+
+                int expectedProjectImportsCount = v1Package ? extensionPkgIdentities.Count() : expectedImportsV2.Count;
+
                 extensionProject.Imports.Count.ShouldBe(expectedProjectImportsCount);
 
-                IEnumerable<PackageIdentity> importPkgIdentities;
-                if (lastDefinedPackageWins)
-                {
-                    importPkgIdentities = _packages;
-                }
-                else
-                {
-                    importPkgIdentities = _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase)));
-                }
+                IEnumerable<PackageIdentity> importPkgIdentities = lastDefinedPackageWins ? _packages : _packages.Distinct(new LambdaComparer<PackageIdentity>((x, y) => String.Equals(x.Id, y.Id, StringComparison.OrdinalIgnoreCase)));
 
                 int importCount = 0;
-                foreach (var pkg in (v1Package ? importPkgIdentities : importPkgIdentities.Where(i => expectedImportsV2.Any(me => me.Item1.Equals(i.Id) && me.Item2.Equals(i.Version.ToString())))))
+
+                foreach (PackageIdentity pkg in (v1Package ? importPkgIdentities : importPkgIdentities.Where(i => expectedImportsV2.Any(me => me.Item1.Equals(i.Id) && me.Item2.Equals(i.Version.ToString())))))
                 {
-                    string importProject = $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(pkg)}\\{importRelativePath}\\{(v1Package ? "$(MSBuildThisFile)" : Path.GetFileName(extensionProject.FullPath))}";
+                    string importProject = Path.Combine(_packageRoot, packageFolderFunc(pkg), importRelativePath, v1Package ? "$(MSBuildThisFile)" : Path.GetFileName(extensionProject.FullPath) ?? String.Empty);
+
                     ProjectImportElement import = extensionProject.Imports.Skip(importCount).FirstOrDefault();
 
                     import.ShouldNotBeNull();
 
                     import.Project.ShouldBe(importProject, StringCompareShould.IgnoreCase);
+
                     importCount++;
                 }
-            }
-        }
-
-        private string ExpectedImports(Func<PackageIdentity, string> packageFolderFunc, string importRelativePath, PackageIdentity i, bool v1Package)
-        {
-            if (v1Package)
-            {
-                return $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}\\{importRelativePath}\\$(MSBuildThisFile)";
-            }
-            return (File.Exists($"{_packagesPath}\\{packageFolderFunc(i)}\\{ModulePropertyGenerator.ModuleConfigPath}") && File.Exists($"{_packagesPath}\\{packageFolderFunc(i)}\\{importRelativePath}\\{i.Id}.props")) ? $"{ModulePropertyGenerator.PropertyValuePrefix}{packageFolderFunc(i)}\\{importRelativePath}\\{i.Id}.props" : string.Empty;
-        }
-
-        internal sealed class TestBuildEngine : IBuildEngine
-        {
-            // ReSharper disable once CollectionNeverQueried.Local
-            private readonly IList<BuildEventArgs> _loggedBuildEvents = new List<BuildEventArgs>();
-
-            public int ColumnNumberOfTaskNode => 0;
-
-            public bool ContinueOnError => false;
-
-            public int LineNumberOfTaskNode => 0;
-
-            public string ProjectFileOfTaskNode => String.Empty;
-
-            public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs)
-            {
-                throw new NotSupportedException();
-            }
-
-            public void LogCustomEvent(CustomBuildEventArgs e) => _loggedBuildEvents.Add(e);
-
-            public void LogErrorEvent(BuildErrorEventArgs e) => _loggedBuildEvents.Add(e);
-
-            public void LogMessageEvent(BuildMessageEventArgs e) => _loggedBuildEvents.Add(e);
-
-            public void LogWarningEvent(BuildWarningEventArgs e) => _loggedBuildEvents.Add(e);
-        }
-
-        internal sealed class TestTask : ITask
-        {
-            public IBuildEngine BuildEngine { get; set; }
-
-            public ITaskHost HostObject { get; set; }
-
-            public bool Execute()
-            {
-                throw new NotSupportedException();
             }
         }
     }
