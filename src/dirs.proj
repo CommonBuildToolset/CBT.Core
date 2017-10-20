@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.5</TargetFrameworkVersion>
-    <TargetFramework Condition=" '$(TargetFramework)' == '' ">net45</TargetFramework>
-  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MSBuild.Traversal" version="1.0.7-rc1-g01f92d5de4" />
-    <ProjectReference Include="**\*.??proj" Exclude="$(MSBuildThisFileFullPath)" />
+    <ProjectFile Include="**\*.??proj" Exclude="$(MSBuildThisFileFullPath)" />
   </ItemGroup>
+
+  <Import Project="$(TraversalTargets)" Condition=" '$(CBTModulesRestored)' == 'true' " />
+
 </Project>
