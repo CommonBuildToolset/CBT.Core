@@ -4,8 +4,8 @@
     <TargetFramework>net45</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CBT.Traversal" Version="2.0.39-dev-gcbbf918640" />
-    <PackageReference Include="CBT.NuGet" Version="2.1.3-dev-ga5ba531211" />
+    <PackageReference Include="CBT.Traversal" Version="2.0.40" />
+    <PackageReference Include="CBT.NuGet" Version="2.1.7" />
     <PackageReference Include="CBT.DotNetFx-net45" Version="1.0.0-beta01" />
     <PackageReference Include="Nerdbank.GitVersioning" Version="1.6.35" />
   </ItemGroup>
