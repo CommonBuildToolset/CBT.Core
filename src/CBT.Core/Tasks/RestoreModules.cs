@@ -59,6 +59,8 @@ namespace CBT.Core.Tasks
 
         public string[] Inputs { get; set; }
 
+        public string MSBuildBinPath { get; set; }
+
         public string NuGetDownloaderArguments { get; set; }
 
         public string NuGetDownloaderAssemblyPath { get; set; }
@@ -153,7 +155,7 @@ namespace CBT.Core.Tasks
             return true;
         }
 
-        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string restoreCommand, string restoreCommandArguments, string projectFullPath)
+        public bool Execute(string[] afterImports, string[] beforeImports, string extensionsPath, string importsFile, string nuGetDownloaderAssemblyPath, string nuGetDownloaderClassName, string nuGetDownloaderArguments, string[] inputs, string packageConfig, string restoreCommand, string restoreCommandArguments, string projectFullPath, string msbuildBinPath)
         {
             BuildEngine = new CBTBuildEngine();
 
@@ -163,6 +165,7 @@ namespace CBT.Core.Tasks
             _log.LogMessage(MessageImportance.Low, $"  ExtensionsPath = {extensionsPath}");
             _log.LogMessage(MessageImportance.Low, $"  ImportsFile = {importsFile}");
             _log.LogMessage(MessageImportance.Low, $"  Inputs = {String.Join(";", inputs)}");
+            _log.LogMessage(MessageImportance.Low, $"  MSBuildBinPath = {msbuildBinPath}");
             _log.LogMessage(MessageImportance.Low, $"  NuGetDownloaderArguments = {nuGetDownloaderArguments}");
             _log.LogMessage(MessageImportance.Low, $"  NuGetDownloaderAssemblyPath = {nuGetDownloaderAssemblyPath}");
             _log.LogMessage(MessageImportance.Low, $"  NuGetDownloaderClassName = {nuGetDownloaderClassName}");
@@ -182,6 +185,7 @@ namespace CBT.Core.Tasks
             ExtensionsPath = extensionsPath;
             ImportsFile = importsFile;
             Inputs = inputs;
+            MSBuildBinPath = msbuildBinPath;
             NuGetDownloaderAssemblyPath = nuGetDownloaderAssemblyPath;
             NuGetDownloaderClassName = nuGetDownloaderClassName;
             NuGetDownloaderArguments = nuGetDownloaderArguments;
@@ -356,6 +360,24 @@ namespace CBT.Core.Tasks
             bool isPackagesConfig = PackageConfig.EndsWith("packages.config", StringComparison.OrdinalIgnoreCase);
 
             string moduleRestoreInfoFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tmp");
+
+            try
+            {
+                FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(RestoreCommand);
+
+                if (fileVersionInfo.ProductMajorPart >= 4 && RestoreCommandArguments.IndexOf("-MSBuildPath", StringComparison.OrdinalIgnoreCase) == -1)
+                {
+                    string msbuildPathArgument = $" -MSBuildPath \"{MSBuildBinPath}\"";
+
+                    _log.LogMessage(MessageImportance.Low, $"Adding '{msbuildPathArgument}' to the restore command arguments for NuGet {fileVersionInfo.ProductVersion}");
+
+                    RestoreCommandArguments += msbuildPathArgument;
+                }
+            }
+            catch (Exception)
+            {
+                _log.LogWarning($"Failed to get assembly version information from assembly '{RestoreCommand}'.  Verify that the assembly is not corrupted and is a valid NuGet.exe.");
+            }
 
             using (ManualResetEvent processExited = new ManualResetEvent(false))
             using (Process process = new Process

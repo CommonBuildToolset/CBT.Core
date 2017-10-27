@@ -71,7 +71,7 @@
     -->
     <CBTCoreAssemblyName Condition=" Exists('$(CBTCoreAssemblyPath)') And '$(CBTCoreAssemblyPath.GetType().Assembly.GetType(`System.AppDomain`).GetProperty(`CurrentDomain`).GetValue(null).GetData(`CBT_CORE_ASSEMBLY`))' == '' ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).SetData('CBT_CORE_ASSEMBLY', $(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).Load($(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.IO.File').GetMethod('ReadAllBytes').Invoke(null, $([System.IO.Directory]::GetFiles($([System.IO.Path]::GetDirectoryName($(CBTCoreAssemblyPath))), $([System.IO.Path]::GetFileName($(CBTCoreAssemblyPath)))))))))))</CBTCoreAssemblyName> 
     <CBTCoreAssemblyName>$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY'))</CBTCoreAssemblyName> 
-    <CBTModulesRestored Condition=" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath)))</CBTModulesRestored>
+    <CBTModulesRestored Condition=" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ">$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath), $(MSBuildBinPath)))</CBTModulesRestored>
 
   </PropertyGroup>
 
@@ -106,6 +106,7 @@
       BeforeImports="$(CBTModuleImportsBefore.Split(';'))"
       ExtensionsPath="$(CBTModuleExtensionsPath)"
       ImportsFile="$(CBTModulePropertiesFile)"
+      MSBuildBinPath="$(MSBuildBinPath)"
       NuGetDownloaderAssemblyPath="$(CBTNuGetDownloaderAssemblyPath)"
       NuGetDownloaderClassName="$(CBTNuGetDownloaderClassName)"
       NuGetDownloaderArguments="$(CBTNuGetDownloaderArguments)"
