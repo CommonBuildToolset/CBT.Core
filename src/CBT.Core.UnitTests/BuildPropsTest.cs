@@ -60,7 +60,7 @@ namespace CBT.Core.UnitTests
                 new Property("RestoreCBTModules", @"false", @" $(RestoreGraphProjectInput.Contains($(CBTModulePackageConfigPath))) "),
                 new Property("CBTCoreAssemblyName", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).SetData('CBT_CORE_ASSEMBLY', $(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).Load($(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.IO.File').GetMethod('ReadAllBytes').Invoke(null, $([System.IO.Directory]::GetFiles($([System.IO.Path]::GetDirectoryName($(CBTCoreAssemblyPath))), $([System.IO.Path]::GetFileName($(CBTCoreAssemblyPath)))))))))))", @" Exists('$(CBTCoreAssemblyPath)') And '$(CBTCoreAssemblyPath.GetType().Assembly.GetType(`System.AppDomain`).GetProperty(`CurrentDomain`).GetValue(null).GetData(`CBT_CORE_ASSEMBLY`))' == '' "),
                 new Property("CBTCoreAssemblyName", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY'))", string.Empty),
-                new Property("CBTModulesRestored", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath)))", @" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ")
+                new Property("CBTModulesRestored", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath), $(MSBuildBinPath)))", @" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ")
             };
             var propertiesToScan = _project.Properties.Where(p => p.Parent.Parent is ProjectRootElement);
             var propertiesEnumerator = propertiesToScan.GetEnumerator();
@@ -76,7 +76,7 @@ namespace CBT.Core.UnitTests
                 property.Value.ShouldBe(String.Format(knownProperty.Value, property.Name), $"Property {property.Name} value is not as expected.");
             }
             propertiesEnumerator.Dispose();
-            knownProperties.Count.ShouldBe(propertiesToScan.Count(), "Expecting properites under ProjectRootElement and actual properties differ. ");
+            knownProperties.Count.ShouldBe(propertiesToScan.Count(), "Expecting properties under ProjectRootElement and actual properties differ. ");
 
         }
 
@@ -172,6 +172,7 @@ namespace CBT.Core.UnitTests
                 {"BeforeImports", "$(CBTModuleImportsBefore.Split(';'))"},
                 {"ExtensionsPath", "$(CBTModuleExtensionsPath)"},
                 {"ImportsFile", "$(CBTModulePropertiesFile)"},
+                {"MSBuildBinPath", "$(MSBuildBinPath)" },
                 {"NuGetDownloaderAssemblyPath", "$(CBTNuGetDownloaderAssemblyPath)"},
                 {"NuGetDownloaderClassName", "$(CBTNuGetDownloaderClassName)"},
                 {"NuGetDownloaderArguments", "$(CBTNuGetDownloaderArguments)"},

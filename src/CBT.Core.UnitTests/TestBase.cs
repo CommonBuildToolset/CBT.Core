@@ -27,7 +27,7 @@ namespace CBT.Core.UnitTests
             }
         }
 
-        protected string TestAssemblyDirectory => Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        protected string TestAssemblyDirectory => Path.GetDirectoryName(typeof(TestBase).GetTypeInfo().Assembly.Location);
 
         protected string GetFilePath(string filename)
         {
