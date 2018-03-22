@@ -253,6 +253,15 @@ namespace CBT.Core.UnitTests
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
             item.ItemType.ShouldBe("CBTModuleRestoreInfo");
+            item.Include.ShouldBe("RestoreProjectStyle");
+            item.Metadata.Count.ShouldBe(1);
+            item.Metadata.First().Condition.ShouldBe(" '$(RestoreProjectStyle)' == '' ");
+            item.Metadata.First().Name.ShouldBe("value");
+            item.Metadata.First().Value.ShouldBe("$(NuGetProjectStyle)");
+
+            itemEnumerator.MoveNext();
+            item = itemEnumerator.Current;
+            item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Include.ShouldBe("RestoreOutputAbsolutePath");
             item.Metadata.Count.ShouldBe(1);
             item.Metadata.First().Name.ShouldBe("value");
