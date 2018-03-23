@@ -249,9 +249,9 @@ namespace CBT.Core.UnitTests
             item.Metadata.Count.ShouldBe(2);
             item.Metadata.First().Name.ShouldBe("value");
             item.Metadata.First().Value.ShouldBe("$(RestoreProjectStyle)");
-            item.Metadata.ToList()[2].Condition.ShouldBe(" '$(RestoreProjectStyle)' == '' ");
-            item.Metadata.ToList()[2].Name.ShouldBe("value");
-            item.Metadata.ToList()[2].Value.ShouldBe("$(NuGetProjectStyle)");
+            item.Metadata.ToList()[1].Condition.ShouldBe(" '$(RestoreProjectStyle)' == '' ");
+            item.Metadata.ToList()[1].Name.ShouldBe("value");
+            item.Metadata.ToList()[1].Value.ShouldBe("$(NuGetProjectStyle)");
 
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
