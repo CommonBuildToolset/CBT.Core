@@ -120,6 +120,12 @@
       <CBTModulesRestored Condition=" '$(CBTModulesRestored)' != 'true' ">true</CBTModulesRestored>
     </PropertyGroup>
 
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="CBTDesignTimeBuild"
+             Properties="DesignTimeBuild=$(DesignTimeBuild);BuildingProject=$(BuildingProject);BuildingInsideVisualStudio=$(BuildingInsideVisualStudio);CBTModulesRestored=$(CBTModulesRestored)"
+             Condition=" '$(CBTModulesRestored)' == 'true' And '$(BuildingInsideVisualStudio)' == 'true' "
+             />
+
   </Target>
 
   <!-- _GenerateRestoreProjectSpec is a from the nuget.targets new to NuGet 4.x. -->
@@ -142,6 +148,9 @@
     </ItemGroup>
     <WriteModuleRestoreInfo File="$(CBTModuleRestoreInfoFile)" Input="@(CBTModuleRestoreInfo)" />
   </Target>
+
+  <Target Name="CBTDesignTimeBuild" DependsOnTargets="$(CBTDesignTimeBuildDependsOn)" />
+
   <Import Project="$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)" Condition=" '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)') " />
 
 </Project>
