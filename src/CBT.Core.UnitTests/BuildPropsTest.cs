@@ -62,13 +62,13 @@ namespace CBT.Core.UnitTests
                 new Property("CBTCoreAssemblyName", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY'))", string.Empty),
                 new Property("CBTModulesRestored", @"$(CBTCoreAssemblyPath.GetType().Assembly.GetType('System.AppDomain').GetProperty('CurrentDomain').GetValue(null).GetData('CBT_CORE_ASSEMBLY').CreateInstance($(CBTModuleRestoreTaskName)).Execute($(CBTModuleImportsAfter.Split(';')), $(CBTModuleImportsBefore.Split(';')), $(CBTModuleExtensionsPath), $(CBTModulePropertiesFile), $(CBTNuGetDownloaderAssemblyPath), $(CBTNuGetDownloaderClassName), '$(CBTNuGetDownloaderArguments)', $(CBTModuleRestoreInputs.Split(';')), $(CBTModulePackageConfigPath), $(CBTModuleRestoreCommand), $(CBTModuleRestoreCommandArguments), $(MSBuildProjectFullPath), $(MSBuildBinPath)))", @" '$(RestoreCBTModules)' != 'false' And '$(BuildingInsideVisualStudio)' != 'true' And '$(CBTModulesRestored)' != 'true' And '$(CBTCoreAssemblyName)' != '' ")
             };
-            var propertiesToScan = _project.Properties.Where(p => p.Parent.Parent is ProjectRootElement);
-            var propertiesEnumerator = propertiesToScan.GetEnumerator();
-            foreach (var knownProperty in knownProperties)
+            IEnumerable<ProjectPropertyElement> propertiesToScan = _project.Properties.Where(p => p.Parent.Parent is ProjectRootElement);
+            IEnumerator<ProjectPropertyElement> propertiesEnumerator = propertiesToScan.GetEnumerator();
+            foreach (Property knownProperty in knownProperties)
             {
                 propertiesEnumerator.MoveNext();
-                var property = propertiesEnumerator.Current;
-                property.ShouldNotBe(null);
+                ProjectPropertyElement property = propertiesEnumerator.Current;
+                property.ShouldNotBeNull();
 
                 property.Name.ShouldBe(knownProperty.Name,StringCompareShould.IgnoreCase);
 
@@ -129,15 +129,15 @@ namespace CBT.Core.UnitTests
         public void ShowCBTParseErrorsTargetTest()
         {
 
-            var target = _project.Targets.FirstOrDefault(i => i.Name.Equals("ShowCBTParseErrors", StringComparison.OrdinalIgnoreCase));
-            target.ShouldNotBe(null);
+            ProjectTargetElement target = _project.Targets.FirstOrDefault(i => i.Name.Equals("ShowCBTParseErrors", StringComparison.OrdinalIgnoreCase));
+            target.ShouldNotBeNull();
             target.Condition.ShouldBe(" '@(CBTParseError)' != '' ");
             target.Inputs.ShouldBe("");
             target.Outputs.ShouldBe("");
 
-            var task = target.Tasks.FirstOrDefault(i => i.Name.Equals("Error"));
+            ProjectTaskElement task = target.Tasks.FirstOrDefault(i => i.Name.Equals("Error"));
 
-            task.ShouldNotBe(null);
+            task.ShouldNotBeNull();
 
             task.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -151,10 +151,9 @@ namespace CBT.Core.UnitTests
         [Description("Verifies that the RestoreCBTModules target and RestoreModules task are properly defined.")]
         public void RestoreCBTModulesTargetTest()
         {
+            ProjectTargetElement target = _project.Targets.FirstOrDefault(i => i.Name.Equals("RestoreCBTModules", StringComparison.OrdinalIgnoreCase));
 
-            var target = _project.Targets.FirstOrDefault(i => i.Name.Equals("RestoreCBTModules", StringComparison.OrdinalIgnoreCase));
-
-            target.ShouldNotBe(null);
+            target.ShouldNotBeNull();
 
             target.Condition.ShouldBe(@" '$(RestoreCBTModules)' != 'false' And '$(CBTModulesRestored)' != 'true' ");
 
@@ -162,9 +161,9 @@ namespace CBT.Core.UnitTests
 
             target.Outputs.ShouldBe("$([MSBuild]::ValueOrDefault($(CBTModulePropertiesFile), 'null'))");
 
-            var task = target.Tasks.FirstOrDefault(i => i.Name.Equals("RestoreModules"));
+            ProjectTaskElement task = target.Tasks.FirstOrDefault(i => i.Name.Equals("RestoreModules"));
 
-            task.ShouldNotBe(null);
+            task.ShouldNotBeNull();
 
             task.Parameters.ShouldBe(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -182,25 +181,49 @@ namespace CBT.Core.UnitTests
                 {"RestoreCommandArguments", "$(CBTModuleRestoreCommandArguments)"},
             });
 
-            var propertyGroup = target.PropertyGroups.LastOrDefault();
+            ProjectPropertyGroupElement propertyGroup = target.PropertyGroups.LastOrDefault();
 
-            propertyGroup.ShouldNotBe(null);
+            propertyGroup.ShouldNotBeNull();
 
             propertyGroup.Location.ShouldBeGreaterThan(task.Location, "<PropertyGroup /> should come after <RestoreModules /> task");
 
-            var property = propertyGroup.Properties.FirstOrDefault(i => i.Name.Equals("CBTModulesRestored", StringComparison.OrdinalIgnoreCase));
+            ProjectPropertyElement property = propertyGroup.Properties.FirstOrDefault(i => i.Name.Equals("CBTModulesRestored", StringComparison.OrdinalIgnoreCase));
 
-            property.ShouldNotBe(null);
+            property.ShouldNotBeNull();
 
             property.Condition.ShouldBe($" '$({property.Name})' != 'true' ");
 
             property.Value.ShouldBe(true.ToString(), StringCompareShould.IgnoreCase);
 
-            var usingTask = _project.UsingTasks.FirstOrDefault(i => i.TaskName.Equals("RestoreModules", StringComparison.OrdinalIgnoreCase));
+            ProjectUsingTaskElement usingTask = _project.UsingTasks.FirstOrDefault(i => i.TaskName.Equals("RestoreModules", StringComparison.OrdinalIgnoreCase));
 
-            usingTask.ShouldNotBe(null);
+            usingTask.ShouldNotBeNull();
 
             usingTask.AssemblyFile.ShouldBe("$(CBTCoreAssemblyPath)", StringCompareShould.IgnoreCase);
+
+            ProjectTaskElement designTimeBuildTask = target.Tasks.FirstOrDefault(i => i.Name.Equals("MSBuild"));
+
+            designTimeBuildTask.ShouldNotBeNull();
+
+            designTimeBuildTask.Parameters.ShouldBe(new Dictionary<string, string>
+            {
+                { "Projects", "$(MSBuildProjectFullPath)" },
+                { "Targets", "CBTDesignTimeBuild" },
+                { "Properties", "DesignTimeBuild=$(DesignTimeBuild);BuildingProject=$(BuildingProject);BuildingInsideVisualStudio=$(BuildingInsideVisualStudio);CBTModulesRestored=$(CBTModulesRestored)" },
+            }, ignoreOrder: true);
+
+            designTimeBuildTask.Condition.ShouldBe(" '$(CBTModulesRestored)' == 'true' And '$(BuildingInsideVisualStudio)' == 'true' ");
+        }
+
+        [Fact]
+        [Description("Verifies that the CBTDesignTimeBuild target is properly defined.")]
+        public void CBTDesignTimeBuildTest()
+        {
+            ProjectTargetElement target = _project.Targets.FirstOrDefault(i => i.Name.Equals("CBTDesignTimeBuild", StringComparison.OrdinalIgnoreCase));
+
+            target.ShouldNotBeNull();
+
+            target.DependsOnTargets.ShouldBe("$(CBTDesignTimeBuildDependsOn)");
         }
 
         [Fact]
@@ -213,7 +236,7 @@ namespace CBT.Core.UnitTests
 
             // ReSharper disable once PossibleNullReferenceException
             target.Children.Count.ShouldBe(2);
-            target.ShouldNotBe(null);
+            target.ShouldNotBeNull();
             target.Condition.ShouldBe(@" '$(RestoreOutputAbsolutePath)' != '' And '$(MSBuildProjectFullPath)' == '$(CBTModulePackageConfigPath)' ");
             target.Inputs.ShouldBe(string.Empty);
             target.Outputs.ShouldBe(string.Empty);
@@ -221,16 +244,16 @@ namespace CBT.Core.UnitTests
             target.BeforeTargets.ShouldBe(string.Empty);
             target.DependsOnTargets.ShouldBe(string.Empty);
 
-            var targetChildrenEnumerator = target.Children.GetEnumerator();
+            IEnumerator<ProjectElement> targetChildrenEnumerator = target.Children.GetEnumerator();
             targetChildrenEnumerator.MoveNext();
 
-            var itemGroup = targetChildrenEnumerator.Current as ProjectItemGroupElement;
-            itemGroup.ShouldNotBe(null);
+            ProjectItemGroupElement itemGroup = targetChildrenEnumerator.Current as ProjectItemGroupElement;
+            itemGroup.ShouldNotBeNull();
             itemGroup.Children.Count.ShouldBe(5);
 
-            var itemEnumerator = itemGroup.Items.GetEnumerator();
+            IEnumerator<ProjectItemElement> itemEnumerator = itemGroup.Items.GetEnumerator();
             itemEnumerator.MoveNext();
-            var item = itemEnumerator.Current;
+            ProjectItemElement item = itemEnumerator.Current;
             item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Remove.ShouldBe("@(CBTModuleRestoreInfo)");
 
@@ -271,8 +294,8 @@ namespace CBT.Core.UnitTests
 
             targetChildrenEnumerator.MoveNext();
 
-            var task1 = targetChildrenEnumerator.Current as ProjectTaskElement;
-            task1.ShouldNotBe(null);
+            ProjectTaskElement task1 = targetChildrenEnumerator.Current as ProjectTaskElement;
+            task1.ShouldNotBeNull();
             task1.Name.ShouldBe("WriteModuleRestoreInfo");
             task1.Condition.ShouldBe(string.Empty);
             task1.Parameters.Count.ShouldBe(2);
@@ -289,32 +312,32 @@ namespace CBT.Core.UnitTests
         [Description("Verifies that imports are correct.")]
         public void ImportsTest()
         {
-            var beforeImport = _project.Imports.FirstOrDefault(i => i.Project.Equals(@"$(CBTLocalBuildExtensionsPath)\Before.$(MSBuildThisFile)", StringComparison.OrdinalIgnoreCase));
+            ProjectImportElement beforeImport = _project.Imports.FirstOrDefault(i => i.Project.Equals(@"$(CBTLocalBuildExtensionsPath)\Before.$(MSBuildThisFile)", StringComparison.OrdinalIgnoreCase));
 
-            beforeImport.ShouldNotBe(null);
+            beforeImport.ShouldNotBeNull();
 
             beforeImport.Condition.ShouldBe(@" '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\Before.$(MSBuildThisFile)') ");
 
-            var firstPropertyGroup = _project.PropertyGroups.First();
-            var secondPropertyGroup = _project.PropertyGroups.Skip(1).First();
+            ProjectPropertyGroupElement firstPropertyGroup = _project.PropertyGroups.First();
+            ProjectPropertyGroupElement secondPropertyGroup = _project.PropertyGroups.Skip(1).First();
 
             beforeImport.Location.ShouldBeGreaterThan(firstPropertyGroup.Location, @"The import of '$(CBTLocalBuildExtensionsPath)\Before.$(MSBuildThisFile)' should come after the first <PropertyGroup />");
 
             secondPropertyGroup.Location.ShouldBeGreaterThan(beforeImport.Location, @"The import of '$(CBTLocalBuildExtensionsPath)\Before.$(MSBuildThisFile)' should come before the second <PropertyGroup />");
 
-            var afterImport = _project.Imports.FirstOrDefault(i => i.Project.Equals(@"$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)", StringComparison.OrdinalIgnoreCase));
+            ProjectImportElement afterImport = _project.Imports.FirstOrDefault(i => i.Project.Equals(@"$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)", StringComparison.OrdinalIgnoreCase));
 
-            afterImport.ShouldNotBe(null);
+            afterImport.ShouldNotBeNull();
 
             afterImport.Condition.ShouldBe(@" '$(CBTLocalBuildExtensionsPath)' != '' And Exists('$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile)') ");
 
-            var lastChild = _project.Children.Last();
+            ProjectElement lastChild = _project.Children.Last();
 
             afterImport.ShouldBe(lastChild, @"The last element should be the import of '$(CBTLocalBuildExtensionsPath)\After.$(MSBuildThisFile'");
 
-            var moduleImport = _project.Imports.FirstOrDefault(i => i.Project.Equals("$(CBTModulePropertiesFile)", StringComparison.OrdinalIgnoreCase));
+            ProjectImportElement moduleImport = _project.Imports.FirstOrDefault(i => i.Project.Equals("$(CBTModulePropertiesFile)", StringComparison.OrdinalIgnoreCase));
 
-            moduleImport.ShouldNotBe(null);
+            moduleImport.ShouldNotBeNull();
             moduleImport.Condition.ShouldBe(" ('$(CBTModulesRestored)' == 'true' Or '$(BuildingInsideVisualStudio)' == 'true') And Exists('$(CBTModulePropertiesFile)') ");
 
             moduleImport.Location.ShouldBeGreaterThan(secondPropertyGroup.Location, "The import of '$(CBTModulePropertiesFile)' should come after the second property group");
@@ -322,17 +345,17 @@ namespace CBT.Core.UnitTests
 
         private void ItemShouldBe( IEnumerable<Items> items, StringCompareShould stringCompareShould = StringCompareShould.IgnoreCase)
         {
-            var valItemEnumerator = items.GetEnumerator();
+            IEnumerator<Items> valItemEnumerator = items.GetEnumerator();
             valItemEnumerator.MoveNext();
-            foreach (var item in _project.Items)
+            foreach (ProjectItemElement item in _project.Items)
             {
                 // Ignore items not under projectroot
                 if (!(item.Parent.Parent is ProjectRootElement))
                 {
                     continue;
                 }
-                var valItem = valItemEnumerator.Current;
-                valItem.ShouldNotBe(null);
+                Items valItem = valItemEnumerator.Current;
+                valItem.ShouldNotBeNull();
                 if (item.ItemType.Equals(valItem.ItemType))
                 {
                     item.Condition.ShouldBe(valItem.Condition, stringCompareShould);
@@ -347,12 +370,12 @@ namespace CBT.Core.UnitTests
 
         private void MetadataShouldBe(IEnumerable<NameValueCondition> metadata, ProjectItemElement item, StringCompareShould stringCompareShould = StringCompareShould.IgnoreCase)
         {
-            var valMetadataEnumerator = metadata.GetEnumerator();
+            IEnumerator<NameValueCondition> valMetadataEnumerator = metadata.GetEnumerator();
             valMetadataEnumerator.MoveNext();
-            foreach (var meta in item.Metadata)
+            foreach (ProjectMetadataElement meta in item.Metadata)
             {
-                var valMeta = valMetadataEnumerator.Current;
-                valMeta.ShouldNotBe(null);
+                NameValueCondition valMeta = valMetadataEnumerator.Current;
+                valMeta.ShouldNotBeNull();
                 meta.Name.ShouldBe(valMeta.Name);
                 meta.Condition.ShouldBe(valMeta.Condition, stringCompareShould);
                 meta.Value.ShouldBe(valMeta.Value, stringCompareShould);
