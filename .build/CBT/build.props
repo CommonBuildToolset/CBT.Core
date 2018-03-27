@@ -125,6 +125,7 @@
              Properties="DesignTimeBuild=$(DesignTimeBuild);BuildingProject=$(BuildingProject);BuildingInsideVisualStudio=$(BuildingInsideVisualStudio);CBTModulesRestored=$(CBTModulesRestored)"
              Condition=" '$(CBTModulesRestored)' == 'true' And '$(BuildingInsideVisualStudio)' == 'true' "
              />
+
   </Target>
 
   <!-- _GenerateRestoreProjectSpec is a from the nuget.targets new to NuGet 4.x. -->
