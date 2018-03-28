@@ -137,6 +137,7 @@
       </CBTModuleRestoreInfo>
       <CBTModuleRestoreInfo Include="RestoreProjectStyle">
         <value>$(RestoreProjectStyle)</value>
+        <value Condition=" '$(RestoreProjectStyle)' == '' " >$(NuGetProjectStyle)</value>
       </CBTModuleRestoreInfo>
       <CBTModuleRestoreInfo Include="RestoreOutputAbsolutePath">
         <value>$(RestoreOutputAbsolutePath)</value>
