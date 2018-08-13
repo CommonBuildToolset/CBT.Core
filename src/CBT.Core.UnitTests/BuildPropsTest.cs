@@ -269,9 +269,12 @@ namespace CBT.Core.UnitTests
             item = itemEnumerator.Current;
             item.ItemType.ShouldBe("CBTModuleRestoreInfo");
             item.Include.ShouldBe("RestoreProjectStyle");
-            item.Metadata.Count.ShouldBe(1);
+            item.Metadata.Count.ShouldBe(2);
             item.Metadata.First().Name.ShouldBe("value");
             item.Metadata.First().Value.ShouldBe("$(RestoreProjectStyle)");
+            item.Metadata.ToList()[1].Condition.ShouldBe(" '$(RestoreProjectStyle)' == '' ");
+            item.Metadata.ToList()[1].Name.ShouldBe("value");
+            item.Metadata.ToList()[1].Value.ShouldBe("$(NuGetProjectStyle)");
 
             itemEnumerator.MoveNext();
             item = itemEnumerator.Current;
