@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectFile Include="**\*.??proj" Exclude="$(MSBuildThisFileFullPath)" />
-  </ItemGroup>
-
-  <Import Project="$(TraversalTargets)" Condition=" '$(CBTModulesRestored)' == 'true' " />
-
-</Project>
