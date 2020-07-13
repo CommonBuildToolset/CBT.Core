@@ -1,11 +1,5 @@
-# CBT.Core
+# CBT.Core - Deprecation Notice
 
-The core functionality of CBT.  Use the template projects when adding CBT to your code base.
+CBT is officially deprecated in favor of retail MSBuild.  
 
-## Build status
-
-[![Build status](https://ci.appveyor.com/api/projects/status/r663s97fvs1bh2jy?svg=true)](https://ci.appveyor.com/project/CBT/cbt-core)
-
-## License
-
-CBT is licensed under the [MIT license](LICENSE).
+[Click here](https://gist.github.com/jeffkl/37b14b0601bafbdc9462afa8b288fadc) for more information.
